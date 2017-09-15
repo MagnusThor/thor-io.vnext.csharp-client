@@ -6,10 +6,10 @@ namespace ThorIOClient
 {
     public class ConnectionInfo
     {
-            public string CI;
-            public string C;
-            public string TS;
-            public ConnectionInfo(){}
+        public string CI;
+        public string C;
+        public string TS;
+        public ConnectionInfo() { }
     }
     public partial class Proxy
     {
@@ -46,8 +46,16 @@ namespace ThorIOClient
         }
         private void Send(ThorIOClient.Message message)
         {
-            var data = JsonHelper.JsonSerializer<ThorIOClient.Message>(message);
-            this.ws.SendMessage(data);
+            try
+            {
+                var data = JsonHelper.JsonSerializer<ThorIOClient.Message>(message);
+                this.ws.SendMessage(data);
+            }
+            catch (Exception ex)
+            {
+                this.OnError(ex.Message);
+            }
+
         }
         public Proxy Close()
         {
@@ -79,17 +87,22 @@ namespace ThorIOClient
         }
         public Proxy Subscribe<T>(string topic, Action<T> fn)
         {
-            var subscription = JsonHelper.JsonSerializer<SubscriptionModel>(new SubscriptionModel(topic, this.alias));
-            this.Send(new ThorIOClient.Message("___subscribe", subscription, this.alias));
+
+            var message = new ThorIOClient.Message("___subscribe",
+            JsonHelper.JsonSerializer<Subscription>(new Subscription(topic, this.alias)), this.alias);
+
+            this.Send(message);
             this.On<T>(topic, fn);
+
             return this;
 
         }
 
         public Proxy UnSubscribe(string topic)
         {
-            var subscription = JsonHelper.JsonSerializer<SubscriptionModel>(new SubscriptionModel(topic, this.alias));
-            this.Send(new ThorIOClient.Message("___unsubscribe", subscription, this.alias));
+            var message = new ThorIOClient.Message("___unsubscribe",
+            JsonHelper.JsonSerializer<Subscription>(new Subscription(topic, this.alias)), this.alias);
+            this.Send(message);
             this.Off(topic);
             return this;
         }
@@ -133,5 +146,5 @@ namespace ThorIOClient
         }
     }
 
-   
+
 }

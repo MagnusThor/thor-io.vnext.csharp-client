@@ -16,9 +16,6 @@ namespace ThorIOClient
             ms.Close();
             return jsonString;
         }
-        /// <summary>
-        /// JSON Deserialization
-        /// </summary>
         public static T JsonDeserialize<T>(string jsonString)
         {
             DataContractJsonSerializer ser = new DataContractJsonSerializer(typeof(T));

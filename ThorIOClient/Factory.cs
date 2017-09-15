@@ -15,19 +15,6 @@ using System.Threading.Tasks;
 namespace ThorIOClient
 {
 
-
-    public class SubscriptionModel{
-        public string Topic;
-        public string Controller;
-
-        public SubscriptionModel(string topic, string controller){
-            this.Topic = topic;
-            this.Controller = topic;
-        }
-
-
-    }
-
     public partial class Factory
     {
         private List<Proxy> _proxies;

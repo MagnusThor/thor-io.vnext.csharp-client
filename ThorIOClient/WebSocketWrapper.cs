@@ -27,21 +27,11 @@ namespace ThorIOClient
             _uri = new Uri(uri);
             _cancellationToken = _cancellationTokenSource.Token;
         }
-
-        /// <summary>
-        /// Creates a new instance.
-        /// </summary>
-        /// <param name="uri">The URI of the WebSocket server.</param>
-        /// <returns></returns>
         public static WebSocketWrapper Create(string uri)
         {
             return new WebSocketWrapper(uri);
         }
 
-        /// <summary>
-        /// Connects to the WebSocket server.
-        /// </summary>
-        /// <returns></returns>
         public WebSocketWrapper Connect()
         {
             ConnectAsync();
@@ -53,44 +43,24 @@ namespace ThorIOClient
             this._ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by client", CancellationToken.None);
             return this;
         }
-
-        /// <summary>
-        /// Set the Action to call when the connection has been established.
-        /// </summary>
-        /// <param name="onConnect">The Action to call.</param>
-        /// <returns></returns>
         public WebSocketWrapper OnConnect(Action<WebSocketWrapper> onConnect)
         {
             _onConnected = onConnect;
             return this;
         }
 
-        /// <summary>
-        /// Set the Action to call when the connection has been terminated.
-        /// </summary>
-        /// <param name="onDisconnect">The Action to call</param>
-        /// <returns></returns>
         public WebSocketWrapper OnDisconnect(Action<WebSocketWrapper> onDisconnect)
         {
             _onDisconnected = onDisconnect;
             return this;
         }
 
-        /// <summary>
-        /// Set the Action to call when a messages has been received.
-        /// </summary>
-        /// <param name="onMessage">The Action to call.</param>
-        /// <returns></returns>
         public WebSocketWrapper OnMessage(Action<string, WebSocketWrapper> onMessage)
         {
             _onMessage = onMessage;
             return this;
         }
 
-        /// <summary>
-        /// Send a message to the WebSocket server.
-        /// </summary>
-        /// <param name="message">The message to send</param>
         public void SendMessage(string message)
         {
             SendMessageAsync(message);
