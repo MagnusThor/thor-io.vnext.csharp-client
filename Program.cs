@@ -30,22 +30,28 @@ namespace thorio.csharp
 
             var controllers = new List<string>();
             controllers.Add("rdtest");
+            controllers.Add("chat");
 
-            var factory = new ThorIOClient.Factory("ws://localhost:1337/", controllers);
+            var factory = new ThorIOClient.Factory("wss://neordpoc.herokuapp.com", controllers);
 
-            factory.OnOpen = (List<ThorIOClient.Proxy> Proxies, ThorIOClient.WebSocketWrapper evt) =>
+            factory.OnOpen = (List<ThorIOClient.Proxy> proxies, ThorIOClient.WebSocketWrapper evt) =>
             {
 
                 Console.WriteLine("Connected to server..");
-                // var testController = Proxies.Find((ThorIOClient.Proxy pre) =>
-                // {
-                //     return pre.alias == "rdtest";
-                // });
+               
                 var testController = factory.GetProxy("rdtest");
+                var chatController = factory.GetProxy("chat");
+
+
+                chatController.OnOpen = (ConnectionInfo message) =>
+                {
+                    Console.WriteLine("Controller'chat'  is open");
+                };
+                
 
                 testController.OnOpen = (ConnectionInfo message) =>
                 {
-                    Console.WriteLine("Controller is open");
+                    Console.WriteLine("Controller'rdtest'  is open");
 
 
                     testController.SetProperty<float>("size",11);
@@ -80,7 +86,9 @@ namespace thorio.csharp
                     Console.WriteLine("invokeToExpr - {0}", data.text); // data.num
                 });
 
+
                 testController.Connect();
+                chatController.Connect();
 
 
 

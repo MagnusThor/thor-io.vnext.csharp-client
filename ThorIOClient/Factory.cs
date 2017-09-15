@@ -21,6 +21,7 @@ namespace ThorIOClient
         private WebSocketWrapper ws;
         public Action<List<Proxy>,WebSocketWrapper> OnOpen;
         public Action<WebSocketWrapper> OnClose;
+       
         public Factory(string url, List<string> proxies)
         {
             this._proxies = new List<Proxy>();
