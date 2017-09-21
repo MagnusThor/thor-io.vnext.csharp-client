@@ -1,5 +1,6 @@
 using System;
 using ThorIOClient;
+using ThorIOClient.Interface;
 
 public partial class Listener{
 

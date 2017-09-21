@@ -10,7 +10,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
+using ThorIOClient.Interface;
 
 namespace ThorIOClient
 {
@@ -21,22 +21,26 @@ namespace ThorIOClient
         private WebSocketWrapper ws;
         public Action<List<Proxy>,WebSocketWrapper> OnOpen;
         public Action<WebSocketWrapper> OnClose;
+
+
+        public ISerializer Serializer {get;set;}
        
-        public Factory(string url, List<string> proxies)
+        public Factory(string url, List<string> proxies,ISerializer serializer )
         {
+            this.Serializer = serializer;
             this._proxies = new List<Proxy>();
             this.ws = WebSocketWrapper.Create(url);
             this.ws.OnConnect((WebSocketWrapper evt) =>
             {
                 proxies.ForEach((string proxy) =>
                 {
-                    this._proxies.Add(new ThorIOClient.Proxy(this.ws, proxy));
+                    this._proxies.Add(new ThorIOClient.Proxy(this.ws, proxy,serializer));
                 });
                 this.OnOpen(this._proxies,evt);
 
                 this.ws.OnMessage( (string data,WebSocketWrapper w) =>
                 {
-                         var message = JsonHelper.JsonDeserialize<ThorIOClient.Message>(data);
+                         var message = Serializer.Deserialize<Models.Message>(data);
                          var proxy = this.GetProxy(message.Controller);
                          proxy.Dispatch(message);
                         

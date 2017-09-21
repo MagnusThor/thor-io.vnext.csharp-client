@@ -1,24 +1,23 @@
 using System;
-using System.Runtime.Serialization;
+using Newtonsoft.Json;
+// using System.Runtime.Serialization;
+using ThorIOClient.Interface;
 
-namespace ThorIOClient
+namespace ThorIOClient.Models
 {
-  public interface IMessage
-    {
-        string Data { get; }
-        string Controller { get; set; }
-        string Topic { get; set; }
-    
-    }
-    [DataContract]
+ 
+    // [DataContract]
     public class Message :IMessage
     {
 
-        [DataMember(Name = "D", IsRequired = false)]
+        // [DataMember(Name = "D", IsRequired = false)]
+        [JsonProperty("D")]
         public string Data { get; private set; }
-        [DataMember(Name = "C", IsRequired = true)]
+       // [DataMember(Name = "C", IsRequired = true)]
+        [JsonProperty("C")]
         public string Controller { get; set; }
-        [DataMember(Name = "T", IsRequired = true)]
+        // [DataMember(Name = "T", IsRequired = true)]
+        [JsonProperty("T")]
         public string Topic { get; set; }
         public Message(string topic, string data, string controller)
         {

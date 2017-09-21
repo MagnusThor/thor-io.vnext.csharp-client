@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using ThorIOClient;
+using ThorIOClient.Models;
+using ThorIOClient.Serialization;
 
 namespace thorio.csharp
 {
@@ -13,12 +15,15 @@ namespace thorio.csharp
         public ExampleMessageModel() { }
 
     }
-  [DataContract]
-  
+    [DataContract]
+
     public class ChatMessageModel
     {
+        [DataMember]
         public string message { get; set; }
+        [DataMember]
         public string sender { get; set; }
+
         public string ts { get; set; }
 
         public ChatMessageModel(string message)
@@ -38,7 +43,6 @@ namespace thorio.csharp
     {
         static void Main(string[] args)
         {
-
             Console.Clear();
 
             Console.WriteLine("Thor-io.vnext .NET Client.");
@@ -47,8 +51,9 @@ namespace thorio.csharp
             controllers.Add("rdtest");
             controllers.Add("chat");
             //wss://neordpoc.herokuapp.com
-            var factory = new ThorIOClient.Factory("ws://localhost:8000", controllers);
-
+            var factory = new ThorIOClient.Factory("wss://neordpoc.herokuapp.com",
+            controllers, new NewtonJsonSerialization());
+            //   new JsonSerialization()
             factory.OnOpen = (List<ThorIOClient.Proxy> proxies, ThorIOClient.WebSocketWrapper evt) =>
             {
 
@@ -57,11 +62,10 @@ namespace thorio.csharp
                 var testController = factory.GetProxy("rdtest");
                 var chatController = factory.GetProxy("chat");
 
-
-               chatController.OnError = (string message) =>
-                {
-                    Console.WriteLine(message);
-                };
+                chatController.OnError = (string message) =>
+                 {
+                     Console.WriteLine(message);
+                 };
 
 
                 chatController.OnOpen = (ConnectionInfo message) =>
@@ -72,6 +76,12 @@ namespace thorio.csharp
                     chatController.Invoke("changeGroup", "lobby");
 
                     chatController.Invoke("changeNickName", "Donald Trump");
+
+                    chatController.On<ChatMessageModel>("chatMessage",
+                    (ChatMessageModel chatMessage) =>
+                    {
+                        Console.WriteLine(chatMessage.message);
+                    });
 
                     var timer = new System.Timers.Timer(2000);
 
@@ -125,7 +135,7 @@ namespace thorio.csharp
                 testController.On<ExampleMessageModel>("invokeToExpr", (ExampleMessageModel data) =>
                {
                    Console.WriteLine("invokeToExpr - {0}", data.text); // data.num
-                });
+               });
 
 
                 testController.Connect();
@@ -141,7 +151,7 @@ namespace thorio.csharp
                 Console.WriteLine("Close");
             };
 
-            
+
 
 
 

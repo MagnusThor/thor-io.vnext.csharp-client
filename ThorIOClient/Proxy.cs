@@ -1,28 +1,24 @@
 using System;
 using System.Collections.Generic;
-
+using ThorIOClient.Interface;
 
 namespace ThorIOClient
 {
-    public class ConnectionInfo
-    {
-        public string CI;
-        public string C;
-        public string TS;
-        public ConnectionInfo() { }
-    }
     public partial class Proxy
     {
+        private ISerializer Serializer {get;set;}
         private WebSocketWrapper ws;
         public string alias;
         private List<Listener> Listeners;
-        public Proxy(WebSocketWrapper ws, string alias)
+        public Proxy(WebSocketWrapper ws, string alias,ISerializer serializer)
         {
+        
+            this.Serializer = serializer;
             this.Listeners = new List<Listener>();
             this.ws = ws;
             this.alias = alias;
 
-            this.On<ConnectionInfo>("___open", (ConnectionInfo info) =>
+            this.On<Models.ConnectionInfo>("___open", (Models.ConnectionInfo info) =>
             {
                 this.OnOpen(info);
             });
@@ -33,22 +29,22 @@ namespace ThorIOClient
             });
 
         }
-        public Action<ConnectionInfo> OnOpen;
-        public Action<ConnectionInfo> OnClose;
+        public Action<Models.ConnectionInfo> OnOpen;
+        public Action<Models.ConnectionInfo> OnClose;
         public Action<string> OnError;
 
         public bool IsConnected { get; private set; }
 
         public void Connect()
         {
-            this.Send(new ThorIOClient.Message("___connect",
+            this.Send(new Models.Message("___connect",
             "", this.alias));
         }
-        private void Send(ThorIOClient.Message message)
+        private void Send(Models.Message message)
         {
             try
             {
-                var data = JsonHelper.JsonSerializer<ThorIOClient.Message>(message);
+                var data = Serializer.Serialize<Models.Message>(message);
                 this.ws.SendMessage(data);
             }
             catch (Exception ex)
@@ -59,7 +55,7 @@ namespace ThorIOClient
         }
         public Proxy Close()
         {
-            this.Send(new ThorIOClient.Message("___close", "", this.alias));
+            this.Send(new Models.Message("___close", "", this.alias));
             return this;
         }
         public Proxy On<T>(string topic, Action<T> fn)
@@ -71,7 +67,7 @@ namespace ThorIOClient
             }
             else
             {
-                var listener = new Listener(topic, message => fn(JsonHelper.JsonDeserialize<T>(message.Data)));
+                var listener = new Listener(topic, message => fn(Serializer.Deserialize<T>(message.Data)));
                 this.Listeners.Add(listener);
             }
 
@@ -88,8 +84,8 @@ namespace ThorIOClient
         public Proxy Subscribe<T>(string topic, Action<T> fn)
         {
 
-            var message = new ThorIOClient.Message("___subscribe",
-            JsonHelper.JsonSerializer<Subscription>(new Subscription(topic, this.alias)), this.alias);
+            var message = new Models.Message("___subscribe",
+            Serializer.Serialize<Models.Subscription>(new Models.Subscription(topic, this.alias)), this.alias);
 
             this.Send(message);
             this.On<T>(topic, fn);
@@ -100,15 +96,15 @@ namespace ThorIOClient
 
         public Proxy UnSubscribe(string topic)
         {
-            var message = new ThorIOClient.Message("___unsubscribe",
-            JsonHelper.JsonSerializer<Subscription>(new Subscription(topic, this.alias)), this.alias);
+            var message = new Models.Message("___unsubscribe",
+            Serializer.Serialize<Models.Subscription>(new Models.Subscription(topic, this.alias)), this.alias);
             this.Send(message);
             this.Off(topic);
             return this;
         }
         public Proxy Invoke<T>(string topic, T data)
         {
-            this.Send(new ThorIOClient.Message(topic, JsonHelper.JsonSerializer<T>(data), this.alias));
+            this.Send(new Models.Message(topic, Serializer.Serialize<T>(data), this.alias));
             return this;
         }
         public Proxy Publish<T>(string topic, T data)
