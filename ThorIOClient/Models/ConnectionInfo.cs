@@ -1,10 +1,10 @@
 namespace ThorIOClient.Models
 {
-    public class ConnectionInfo
+    public class ConnectionInformation
     {
         public string CI;
         public string C;
         public string TS;
-        public ConnectionInfo() { }
+        public ConnectionInformation() { }
     }
 }

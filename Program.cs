@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
-using ThorIOClient;
 using ThorIOClient.Models;
-using ThorIOClient.Serialization;
 
 namespace thorio.csharp
 {
@@ -54,7 +52,7 @@ namespace thorio.csharp
             var factory = new ThorIOClient.Factory("wss://neordpoc.herokuapp.com",
             controllers, new NewtonJsonSerialization());
             //   new JsonSerialization()
-            factory.OnOpen = (List<ThorIOClient.Proxy> proxies, ThorIOClient.WebSocketWrapper evt) =>
+            factory.OnOpen = async (List<ThorIOClient.Proxy> proxies, ThorIOClient.WebSocketWrapper evt) =>
             {
 
                 Console.WriteLine("Connected to server..");
@@ -68,14 +66,13 @@ namespace thorio.csharp
                  };
 
 
-                chatController.OnOpen = (ConnectionInfo message) =>
+                chatController.OnOpen = async (ConnectionInformation message) =>
                 {
                     Console.WriteLine("Controller 'chat' is now open");
 
 
-                    chatController.Invoke("changeGroup", "lobby");
-
-                    chatController.Invoke("changeNickName", "Donald Trump");
+                    await chatController.Invoke("changeGroup", "lobby");
+                    await chatController.Invoke("changeNickName", "Donald Trump");
 
                     chatController.On<ChatMessageModel>("chatMessage",
                     (ChatMessageModel chatMessage) =>
@@ -85,12 +82,12 @@ namespace thorio.csharp
 
                     var timer = new System.Timers.Timer(2000);
 
-                    timer.Elapsed += (sender, e) =>
+                    timer.Elapsed += async (sender, e) =>
                     {
 
                         var msg = new ChatMessageModel("Sending a message from the C# client");
 
-                        chatController.Invoke("sendChatMessage", msg);
+                        await chatController.Invoke("sendChatMessage", msg);
 
                     };
 
@@ -99,15 +96,15 @@ namespace thorio.csharp
                 };
 
 
-                testController.OnOpen = (ConnectionInfo message) =>
+                testController.OnOpen = async (ConnectionInformation message) =>
                 {
                     Console.WriteLine("Controller'rdtest'  is open");
 
 
-                    testController.SetProperty<float>("size", 11);
+                    await testController.SetProperty<float>("size", 11);
 
 
-                    testController.Subscribe<TemperatureMessageModel>("tempChange",
+                    await testController.Subscribe<TemperatureMessageModel>("tempChange",
                         (TemperatureMessageModel data) =>
                         {
                             Console.WriteLine("Current temperature {0}", data.temp);
@@ -116,7 +113,7 @@ namespace thorio.csharp
 
                 };
 
-                testController.OnClose = (ConnectionInfo message) =>
+                testController.OnClose = (ConnectionInformation message) =>
                 {
                     Console.WriteLine("Controller is closed");
                 };
@@ -138,12 +135,8 @@ namespace thorio.csharp
                });
 
 
-                testController.Connect();
-                chatController.Connect();
-
-
-
-
+                await testController.Connect();
+                await chatController.Connect();
             };
 
             factory.OnClose = (ThorIOClient.WebSocketWrapper evt) =>

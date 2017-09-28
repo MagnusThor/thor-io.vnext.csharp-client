@@ -1,24 +1,25 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using ThorIOClient.Interface;
 
 namespace ThorIOClient
 {
     public partial class Proxy
     {
-        private ISerializer Serializer {get;set;}
+        private ISerializer Serializer { get; set; }
         private WebSocketWrapper ws;
         public string alias;
         private List<Listener> Listeners;
-        public Proxy(WebSocketWrapper ws, string alias,ISerializer serializer)
+        public Proxy(WebSocketWrapper ws, string alias, ISerializer serializer)
         {
-        
+
             this.Serializer = serializer;
             this.Listeners = new List<Listener>();
             this.ws = ws;
             this.alias = alias;
 
-            this.On<Models.ConnectionInfo>("___open", (Models.ConnectionInfo info) =>
+            this.On<Models.ConnectionInformation>("___open", (Models.ConnectionInformation info) =>
             {
                 this.OnOpen(info);
             });
@@ -29,23 +30,24 @@ namespace ThorIOClient
             });
 
         }
-        public Action<Models.ConnectionInfo> OnOpen;
-        public Action<Models.ConnectionInfo> OnClose;
+        public Action<Models.ConnectionInformation> OnOpen;
+        public Action<Models.ConnectionInformation> OnClose;
         public Action<string> OnError;
 
         public bool IsConnected { get; private set; }
 
-        public void Connect()
+        public async Task Connect()
         {
-            this.Send(new Models.Message("___connect",
-            "", this.alias));
+            await this.Send(new Models.Message("___connect", "", this.alias));
         }
-        private void Send(Models.Message message)
+        private async Task Send(Models.Message message)
         {
             try
             {
-                var data = Serializer.Serialize<Models.Message>(message);
-                this.ws.SendMessage(data);
+                await Task.Run(() => {
+                    var data = Serializer.Serialize<Models.Message>(message);
+                    this.ws.SendMessage(data);
+                });
             }
             catch (Exception ex)
             {
@@ -53,9 +55,9 @@ namespace ThorIOClient
             }
 
         }
-        public Proxy Close()
+        public async Task<Proxy> Close()
         {
-            this.Send(new Models.Message("___close", "", this.alias));
+            await this.Send(new Models.Message("___close", "", this.alias));
             return this;
         }
         public Proxy On<T>(string topic, Action<T> fn)
@@ -81,41 +83,40 @@ namespace ThorIOClient
             return this;
 
         }
-        public Proxy Subscribe<T>(string topic, Action<T> fn)
+        public async Task<Proxy> Subscribe<T>(string topic, Action<T> fn)
         {
 
-            var message = new Models.Message("___subscribe",
-            Serializer.Serialize<Models.Subscription>(new Models.Subscription(topic, this.alias)), this.alias);
+            var message = new Models.Message("___subscribe", Serializer.Serialize<Models.Subscription>(new Models.Subscription(topic, this.alias)), this.alias);
 
-            this.Send(message);
+            await this.Send(message);
             this.On<T>(topic, fn);
 
             return this;
 
         }
 
-        public Proxy UnSubscribe(string topic)
+        public async Task<Proxy> UnSubscribe(string topic)
         {
             var message = new Models.Message("___unsubscribe",
             Serializer.Serialize<Models.Subscription>(new Models.Subscription(topic, this.alias)), this.alias);
-            this.Send(message);
+            await this.Send(message);
             this.Off(topic);
             return this;
         }
-        public Proxy Invoke<T>(string topic, T data)
+        public async Task<Proxy> Invoke<T>(string topic, T data)
         {
-            this.Send(new Models.Message(topic, Serializer.Serialize<T>(data), this.alias));
+            await this.Send(new Models.Message(topic, Serializer.Serialize<T>(data), this.alias));
             return this;
         }
-        public Proxy Publish<T>(string topic, T data)
+        public async Task<Proxy> Publish<T>(string topic, T data)
         {
-            this.Invoke<T>(topic, data);
+            await this.Invoke<T>(topic, data);
             return this;
         }
 
-        public Proxy SetProperty<T>(string propName, T propValue)
+        public async Task<Proxy> SetProperty<T>(string propName, T propValue)
         {
-            this.Invoke<T>(propName, propValue);
+            await this.Invoke<T>(propName, propValue);
             return this;
         }
 
@@ -126,7 +127,9 @@ namespace ThorIOClient
             var listener = this.FindListener(msg.Topic);
             if (listener != null)
             {
-                listener.fn(msg);
+                //System.Diagnostics.Debug.WriteLine("CALLING LISTENER FUNCTION with data: " + msg.Data);
+                if (listener.fn != null)
+                    listener.fn(msg);
             }
             else
                 return;

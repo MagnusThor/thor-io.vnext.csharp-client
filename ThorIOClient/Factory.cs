@@ -19,13 +19,13 @@ namespace ThorIOClient
     {
         private List<Proxy> _proxies;
         private WebSocketWrapper ws;
-        public Action<List<Proxy>,WebSocketWrapper> OnOpen;
+        public Action<List<Proxy>, WebSocketWrapper> OnOpen;
         public Action<WebSocketWrapper> OnClose;
 
 
-        public ISerializer Serializer {get;set;}
-       
-        public Factory(string url, List<string> proxies,ISerializer serializer )
+        public ISerializer Serializer { get; set; }
+
+        public Factory(string url, List<string> proxies, ISerializer serializer)
         {
             this.Serializer = serializer;
             this._proxies = new List<Proxy>();
@@ -34,16 +34,18 @@ namespace ThorIOClient
             {
                 proxies.ForEach((string proxy) =>
                 {
-                    this._proxies.Add(new ThorIOClient.Proxy(this.ws, proxy,serializer));
+                    this._proxies.Add(new ThorIOClient.Proxy(this.ws, proxy, serializer));
                 });
-                this.OnOpen(this._proxies,evt);
+                this.OnOpen(this._proxies, evt);
 
-                this.ws.OnMessage( (string data,WebSocketWrapper w) =>
+                this.ws.OnMessage((string data, WebSocketWrapper w) =>
                 {
-                         var message = Serializer.Deserialize<Models.Message>(data);
-                         var proxy = this.GetProxy(message.Controller);
-                         proxy.Dispatch(message);
-                        
+                    var message = Serializer.Deserialize<Models.Message>(data);
+
+                    var proxy = this.GetProxy(message.Controller);
+
+                    if (proxy != null)
+                        proxy.Dispatch(message);
                 });
 
             });
@@ -52,14 +54,14 @@ namespace ThorIOClient
                 this.OnClose(evt);
             });
 
-
             this.ws.Connect();
         }
 
-        public Proxy GetProxy(string alias){
-                return this._proxies.Find( (Proxy pre) => {
-                        return pre.alias == alias;
-                });
+        public Proxy GetProxy(string alias)
+        {
+            return this._proxies.Find((Proxy pre) => {
+                return pre.alias == alias;
+            });
         }
         public WebSocketWrapper Close()
         {

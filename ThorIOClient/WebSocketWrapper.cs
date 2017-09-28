@@ -38,7 +38,7 @@ namespace ThorIOClient
             return this;
         }
 
-       public WebSocketWrapper Close()
+        public WebSocketWrapper Close()
         {
             this._ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by client", CancellationToken.None);
             return this;
@@ -95,10 +95,10 @@ namespace ThorIOClient
         {
             await _ws.ConnectAsync(_uri, _cancellationToken);
             CallOnConnected();
-            StartListen();
+            await StartListen();
         }
 
-        private async void StartListen()
+        private async Task StartListen()
         {
             var buffer = new byte[ReceiveChunkSize];
 
@@ -107,7 +107,6 @@ namespace ThorIOClient
                 while (_ws.State == WebSocketState.Open)
                 {
                     var stringResult = new StringBuilder();
-
 
                     WebSocketReceiveResult result;
                     do
@@ -132,7 +131,7 @@ namespace ThorIOClient
 
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 CallOnDisconnected();
             }
@@ -142,27 +141,29 @@ namespace ThorIOClient
             }
         }
 
-        private void CallOnMessage(StringBuilder stringResult)
+        private async void CallOnMessage(StringBuilder stringResult)
         {
+            System.Diagnostics.Debug.WriteLine(stringResult.ToString());
+
             if (_onMessage != null)
-                RunInTask(() => _onMessage(stringResult.ToString(), this));
+                await RunInTask(() => _onMessage(stringResult.ToString(), this));
         }
 
-        private void CallOnDisconnected()
+        private async void CallOnDisconnected()
         {
             if (_onDisconnected != null)
-                RunInTask(() => _onDisconnected(this));
+                await RunInTask(() => _onDisconnected(this));
         }
 
-        private void CallOnConnected()
+        private async void CallOnConnected()
         {
             if (_onConnected != null)
-                RunInTask(() => _onConnected(this));
+                await RunInTask(() => _onConnected(this));
         }
 
-        private static void RunInTask(Action action)
+        private async static Task RunInTask(Action action)
         {
-            Task.Factory.StartNew(action);
+            await Task.Run(action);//Task.Factory.StartNew(action);
         }
     }
 }
