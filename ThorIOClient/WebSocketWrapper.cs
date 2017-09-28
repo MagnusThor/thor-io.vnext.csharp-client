@@ -32,15 +32,15 @@ namespace ThorIOClient
             return new WebSocketWrapper(uri);
         }
 
-        public WebSocketWrapper Connect()
+        public async Task<WebSocketWrapper> Connect()
         {
-            ConnectAsync();
+            await ConnectAsync();
             return this;
         }
 
-        public WebSocketWrapper Close()
+        public async Task<WebSocketWrapper> Close()
         {
-            this._ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by client", CancellationToken.None);
+            await this._ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by client", CancellationToken.None);
             return this;
         }
         public WebSocketWrapper OnConnect(Action<WebSocketWrapper> onConnect)
@@ -61,12 +61,12 @@ namespace ThorIOClient
             return this;
         }
 
-        public void SendMessage(string message)
+        public async Task SendMessage(string message)
         {
-            SendMessageAsync(message);
+            await SendMessageAsync(message);
         }
 
-        private async void SendMessageAsync(string message)
+        private async Task SendMessageAsync(string message)
         {
             if (_ws.State != WebSocketState.Open)
             {
@@ -91,10 +91,10 @@ namespace ThorIOClient
             }
         }
 
-        private async void ConnectAsync()
+        private async Task ConnectAsync()
         {
             await _ws.ConnectAsync(_uri, _cancellationToken);
-            CallOnConnected();
+            await CallOnConnected();
             await StartListen();
         }
 
@@ -117,7 +117,7 @@ namespace ThorIOClient
                         {
                             await
                                 _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
-                            CallOnDisconnected();
+                            await CallOnDisconnected();
                         }
                         else
                         {
@@ -127,13 +127,13 @@ namespace ThorIOClient
 
                     } while (!result.EndOfMessage);
 
-                    CallOnMessage(stringResult);
+                    await CallOnMessage(stringResult);
 
                 }
             }
             catch (Exception ex)
             {
-                CallOnDisconnected();
+                await CallOnDisconnected();
             }
             finally
             {
@@ -141,7 +141,7 @@ namespace ThorIOClient
             }
         }
 
-        private async void CallOnMessage(StringBuilder stringResult)
+        private async Task CallOnMessage(StringBuilder stringResult)
         {
             System.Diagnostics.Debug.WriteLine(stringResult.ToString());
 
@@ -149,13 +149,13 @@ namespace ThorIOClient
                 await RunInTask(() => _onMessage(stringResult.ToString(), this));
         }
 
-        private async void CallOnDisconnected()
+        private async Task CallOnDisconnected()
         {
             if (_onDisconnected != null)
                 await RunInTask(() => _onDisconnected(this));
         }
 
-        private async void CallOnConnected()
+        private async Task CallOnConnected()
         {
             if (_onConnected != null)
                 await RunInTask(() => _onConnected(this));
