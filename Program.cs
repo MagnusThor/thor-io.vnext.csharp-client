@@ -1,148 +1,272 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.Serialization;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Timers;
+using ThorIOClient;
+using ThorIOClient.Extensions;
 using ThorIOClient.Models;
 
 namespace thorio.csharp
 {
 
-    public class ExampleMessageModel
-    {
-        public float num;
-        public string text;
-        public ExampleMessageModel() { }
+    public class ChatMessage{
+            
+            public long ts {get;set;}
+            public string message {get;set;}
 
+            public string sender {get;set;}
+            public ChatMessage(string message, string sender){
+                this.message = message; 
+                this.sender = sender;
+                this.ts = DateTime.Now.Ticks;
+            }
     }
-    [DataContract]
 
-    public class ChatMessageModel
-    {
-        [DataMember]
-        public string message { get; set; }
-        [DataMember]
-        public string sender { get; set; }
 
-        public string ts { get; set; }
 
-        public ChatMessageModel(string message)
-        {
-            this.message = message;
+    
+    [ProxyProperties("chat")]
+    public class MyProxy :ProxyBase{
+        public MyProxy(){
+            this.alias = "chat";  // just temp;
         }
-    }
-
-
-    public class TemperatureMessageModel
-    {
-        public float temp;
-        public TemperatureMessageModel() { }
+ 
+        public async void SendChatMessageChat(ChatMessage message){
+                await this.Invoke("sendChatMessage", message);
+              
+        }
+          [Invokable("GotChatMessage")]
+         public void GotChatMessage(ChatMessage msg){
+                Console.WriteLine(msg.message);
+        }
     }
 
     class Program
     {
         static void Main(string[] args)
         {
-            Console.Clear();
 
-            Console.WriteLine("Thor-io.vnext .NET Client.");
+            var proxies = new List<ProxyBase>();
+            var myproxy = new MyProxy();
 
-            var controllers = new List<string>();
-            controllers.Add("rdtest");
-            controllers.Add("chat");
-            //wss://neordpoc.herokuapp.com
-            var factory = new ThorIOClient.Factory("wss://neordpoc.herokuapp.com",
-            controllers, new NewtonJsonSerialization());
-            //   new JsonSerialization()
-            factory.OnOpen = async (List<ThorIOClient.Proxy> proxies, ThorIOClient.WebSocketWrapper evt) =>
-            {
+            myproxy.CreateDelagates();
 
-                Console.WriteLine("Connected to server..");
+            var json = myproxy.Serializer.Serialize(new ChatMessage("foo","bar"));
 
-                var testController = factory.GetProxy("rdtest");
-                var chatController = factory.GetProxy("chat");
+            var msg = new ThorIOClient.Models.Message("GotChatMessage",json,"chat");
 
-                chatController.OnError = (string message) =>
-                 {
-                     Console.WriteLine(message);
-                 };
+       
+
+            myproxy.Dispatch(msg);
+
+            // proxies.Add(myproxy);
 
 
-                chatController.OnOpen = async (ConnectionInformation message) =>
-                {
-                    Console.WriteLine("Controller 'chat' is now open");
 
 
-                    await chatController.Invoke("changeGroup", "lobby");
-                    await chatController.Invoke("changeNickName", "Donald Trump");
+            //  var factory = new ThorIOClient.Factory("ws://neordpoc.herokuapp.com",
+            //      proxies);
 
-                    chatController.On<ChatMessageModel>("chatMessage",
-                    (ChatMessageModel chatMessage) =>
-                    {
-                        Console.WriteLine(chatMessage.message);
-                    });
+            // myproxy.OnError = (string err) => {
 
-                    var timer = new System.Timers.Timer(2000);
-
-                    timer.Elapsed += async (sender, e) =>
-                    {
-
-                        var msg = new ChatMessageModel("Sending a message from the C# client");
-
-                        await chatController.Invoke("sendChatMessage", msg);
-
-                    };
-
-                    timer.Start();
-
-                };
+            // };  
 
 
-                testController.OnOpen = async (ConnectionInformation message) =>
-                {
-                    Console.WriteLine("Controller'rdtest'  is open");
+            // myproxy.OnOpen = (ConnectionInformation ci) => {
+            //         Console.WriteLine("Connected to controller - chat");
+
+            //              var timer = new System.Timers.Timer(4000);
+            //             timer.Elapsed += (sender, e) =>
+            //             {
+
+            //                 myproxy.SendChatMessageChat(new ChatMessage("Hello World from ProxyBase","God"));
+
+            //             };
+
+            //             timer.Start();
+
+            // };  
+
+            // factory.OnOpen = (WebSocketWrapper wrapper) => {
+
+            //         Console.WriteLine("Connected to the server...");
 
 
-                    await testController.SetProperty<float>("size", 11);
+            //         myproxy.Connect();
+            // };
+
+             
 
 
-                    await testController.Subscribe<TemperatureMessageModel>("tempChange",
-                        (TemperatureMessageModel data) =>
-                        {
-                            Console.WriteLine("Current temperature {0}", data.temp);
-                        }
-                    );
+            
 
-                };
+            
+               
 
-                testController.OnClose = (ConnectionInformation message) =>
-                {
-                    Console.WriteLine("Controller is closed");
-                };
+            // var graph = new Dictionary<string,ParameterInfo[]>();
+
+            // Type t = typeof(Animal);
+
+            // var instance = Activator.CreateInstance(typeof(Animal));   
+
+            // Console.WriteLine("Members of {0}:", t.Name);
+
+            //     // ProxyName = t.Name
+
+            //   foreach (var member in t.GetMembers()){
+            //         if(member.GetCustomAttributes(typeof(Invokable),true).Length > 0){
+            //         var methodInfo = t.GetMethod(member.Name);
+            //         var parameterInfo = methodInfo.GetParameters();
+            //         graph.Add(member.Name,parameterInfo); //
+            //         }       
+            //   }
+
+            // // How to invoke
+
+            // var message = new ThorIOClient.Models.Message("ChangePerson","{'name':'John Doe','age':42}","Animal");
+
+            // var json = new NewtonJsonSerialization();
+
+            // var data = json.Deserialize<object>(message.Data) ;
+            // Console.WriteLine(data);
+
+            // // instance.GetType().InvokeMember(message.Topic,BindingFlags.InvokeMethod,null,instance,
+            // new object[]{"data",42}
+            // );
 
 
-                testController.OnError = (string message) =>
-                {
-                    Console.WriteLine(message);
-                };
+        //    var assembly = System.Reflection.Assembly.GetAssembly(typeof(Animal));
 
-                testController.On<ExampleMessageModel>("invokeAndSendToAll", (ExampleMessageModel data) =>
-                {
-                    Console.WriteLine("invokeAndSendToAll - {0}", data.text); // data.num
-                });
+        //     var m = assembly.GetCustomAttributes(typeof(Invokable),true);
 
-                testController.On<ExampleMessageModel>("invokeToExpr", (ExampleMessageModel data) =>
-               {
-                   Console.WriteLine("invokeToExpr - {0}", data.text); // data.num
-               });
+        //     foreach(var p in m){
+        //         Console.WriteLine(p);
+        //     }
+        //     //     Console.Clear();
+
+            //     queue = new ThorIOClient.Queue.ThreadSafeQueue<NetworkEventMessage<Vec3>>();
 
 
-                await testController.Connect();
-                await chatController.Connect();
-            };
 
-            factory.OnClose = (ThorIOClient.WebSocketWrapper evt) =>
-            {
-                Console.WriteLine("Close");
-            };
+            //     Console.WriteLine("Thor-io.vnext .NET Client.");
+
+            //     var controllers = new List<string>();
+            //     controllers.Add("rocketGame");
+            //     //wss://neordpoc.herokuapp.com
+            //     var factory = new ThorIOClient.Factory("ws://neordpoc.herokuapp.com",
+            //     controllers, new NewtonJsonSerialization());
+            //     //   new JsonSerialization()
+            //     factory.OnOpen = async (List<ThorIOClient.Proxy> proxies, ThorIOClient.WebSocketWrapper evt) =>
+            //     {
+
+
+            //         var rocketGame = factory.GetProxy("rocketGame");
+            //         Console.WriteLine("Connected to server..");
+
+            //         rocketGame.OnError = (string err) => {
+            //             // do op 
+            //         };
+
+            //         rocketGame.OnOpen = async (ConnectionInformation ci) =>
+            //         {
+
+            //             Console.WriteLine("connected to RocketGame");
+            //             Random random = new Random();
+
+
+            //             var timer = new System.Timers.Timer(1000);
+            //             timer.Elapsed += (sender, e) =>
+            //             {
+
+            //                     int rnd = random.Next(0, 60);
+            //                     for(var i=0;i<rnd;i++){
+
+            //                     var vec3 = new Vec3( 
+            //                         (float.MaxValue * ((random.Next() / 1073741824.0f) - 1.0f)),
+            //                          (float.MaxValue * ((random.Next() / 1073741824.0f) - 1.0f)),
+            //                           (float.MaxValue * ((random.Next() / 1073741824.0f) - 1.0f)));
+
+            //                     queue.Enqueue(new NetworkEventMessage<Vec3>(vec3));
+
+            //                 }
+            //             };
+
+            //             timer.Start();
+
+
+            //      var ct = new CancellationTokenSource();
+
+            //          new Task(async () => 
+            //          {
+
+            //              for(var i = 0; i < queue.Count;i++){
+            //                     var msg = queue.Dequeue();
+            //                     await rocketGame.Invoke< NetworkEventMessage<Vec3>>("moveRocket",
+            //                     msg);
+            //              }
+
+            //          }).Repeat(ct.Token, TimeSpan.FromMilliseconds(60));
+
+
+
+            //         };
+
+            //         await rocketGame.Connect();
+            //     };
+
+            //     factory.OnClose = (ThorIOClient.WebSocketWrapper evt) =>
+            //     {
+            //         Console.WriteLine("Close");
+            //     };
+
+
+
+            // var data = new List<byte>();
+            // data.Add(0);
+            // data.Add(1);
+            // data.Add(3);
+            // data.Add(4);
+            // data.Add(5);
+
+            // // add some bytes
+
+            // // Create a new dataFrame 
+            // var dataFrame = new ThorIOClient.Protocol.DataFrame(data);
+        
+            // foreach (var b in data)
+            // {
+            //     Console.Write(b.ToString()+ ",");
+            // }
+            // // Display dataframe content, this is the content to send as well
+            // Console.WriteLine();
+            // foreach (var b in dataFrame.ToBytes())
+            // {
+            //     Console.Write(b.ToString() + ",");
+            // }
+
+
+            // // Read the frame
+
+            // Console.WriteLine();
+
+            // var arr = new List<Byte>(dataFrame.ToBytes());
+
+            // ThorIOClient.Protocol.DataFrameReader.Read(arr
+            //     , new ThorIOClient.Protocol.ReadState(),
+            // (ThorIOClient.Protocol.FrameType type, byte[] result) =>
+            // {
+
+            //     foreach (var b in result)
+            //     {
+            //         Console.Write(b.ToString()+ ",");
+            //     }
+
+            // });
+
+
 
 
 
@@ -152,6 +276,8 @@ namespace thorio.csharp
 
 
         }
+
+
     }
 
 
