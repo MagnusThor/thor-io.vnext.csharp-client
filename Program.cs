@@ -67,7 +67,10 @@ namespace thorio.csharp
 
             var msg = new ThorIOClient.Models.Message("SingleParam",json,"chat");
 
+        
             myproxy.Dispatch(msg);
+
+         
 
             // proxies.Add(myproxy);
 

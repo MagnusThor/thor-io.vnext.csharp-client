@@ -6,7 +6,6 @@ using ThorIOClient.Serialization;
 
 namespace ThorIOClient.Extensions {
     public static class ProxyExtensions {
-        
     public static void InvokePluginMethod<T>(this T proxy, MethodInfo methodInfo, dynamic[] parameters)
             where T : ProxyBase, IProxyBase
         {

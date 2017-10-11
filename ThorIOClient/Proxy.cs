@@ -89,13 +89,8 @@ namespace ThorIOClient {
 
             foreach(var member in t.GetMembers()) {
                 if (member.GetCustomAttributes(typeof (Invokable), true).Length > 0) {
-
                     var method = t.GetMethod(member.Name);
-
-                    var pc = new PluginCustomEventInfo(method);
-                
                     this.CustomEvents.Add(new PluginCustomEventInfo(methodInfo: method));
-
                     var key = member.GetCustomAttribute(typeof (Invokable)) as Invokable;
                     var parameters = method.GetParameters()
                         .Select(pi => Expression.Parameter(pi.ParameterType, pi.Name)).ToList();
@@ -134,22 +129,80 @@ namespace ThorIOClient {
                                 Delegates.Add(method.Name, f);
                             }
                             break;
+                        case 3:
+                            {
+                                var le = Expression.Lambda(
+                                    Expression.Call(
+                                        Expression.Constant(this),
+                                        method, parameters[0],parameters[1],parameters[2]), parameters[0],parameters[1],parameters[2]);
 
+                                var f = le.Compile();
+                                Delegates.Add(method.Name, f);
+                            }
+                            break;  
+                       case 4:
+                            {
+                                var le = Expression.Lambda(
+                                    Expression.Call(
+                                        Expression.Constant(this),
+                                        method, parameters[0],parameters[1],parameters[2],parameters[3]),
+                                         parameters[0],parameters[1],parameters[2],parameters[3]);
+
+                                var f = le.Compile();
+                                Delegates.Add(method.Name, f);
+                            }
+                            break;
+                       case 5:
+                            {
+                                var le = Expression.Lambda(
+                                    Expression.Call(
+                                        Expression.Constant(this),
+                                        method, parameters[0],parameters[1],parameters[2],parameters[3],parameters[4]),
+                                         parameters[0],parameters[1],parameters[2],parameters[3],parameters[4]);
+
+                                var f = le.Compile();
+                                Delegates.Add(method.Name, f);
+                            }
+                            break;  
+                      case 6:
+                            {
+                                var le = Expression.Lambda(
+                                    Expression.Call(
+                                        Expression.Constant(this),
+                                        method, parameters[0],parameters[1],parameters[2],parameters[3],parameters[4],
+                                        parameters[5]),
+                                         parameters[0],parameters[1],parameters[2],parameters[3],parameters[4],
+                                         parameters[5]
+                                         );
+
+                                var f = le.Compile();
+                                Delegates.Add(method.Name, f);
+                            }
+                            break;  
+                         case 7:
+                            {
+                                var le = Expression.Lambda(
+                                    Expression.Call(
+                                        Expression.Constant(this),
+                                        method, parameters[0],parameters[1],parameters[2],parameters[3],parameters[4],
+                                        parameters[5],parameters[6]),
+                                         parameters[0],parameters[1],parameters[2],parameters[3],parameters[4],
+                                         parameters[5],parameters[6]
+                                         );
+
+                                var f = le.Compile();
+                                Delegates.Add(method.Name, f);
+                            }
+                            break;  
+       
                     };
 
                 }
             }
         }
-
-
-
-
         public ProxyBase() {
-
-
             this.Serializer = new NewtonJsonSerialization();
             this.Listeners = new List < Listener > ();
-
             this.On < Models.ConnectionInformation > ("___open", (Models.ConnectionInformation info) => {
                 this.OnOpen(info);
             });
