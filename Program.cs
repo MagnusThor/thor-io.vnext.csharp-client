@@ -38,10 +38,16 @@ namespace thorio.csharp
                 await this.Invoke("sendChatMessage", message);
               
         }
-          [Invokable("GotChatMessage")]
+        [Invokable("GotChatMessage")]
          public void GotChatMessage(ChatMessage msg){
                 Console.WriteLine(msg.message);
         }
+         [Invokable("SingleParam")]
+         public void SingleParam(int age,string name){
+                Console.WriteLine(age);
+        }
+       
+
     }
 
     class Program
@@ -52,13 +58,14 @@ namespace thorio.csharp
             var proxies = new List<ProxyBase>();
             var myproxy = new MyProxy();
 
-            myproxy.CreateDelagates();
+            myproxy.CreateDelegates();
 
-            var json = myproxy.Serializer.Serialize(new ChatMessage("foo","bar"));
+            //var json = myproxy.Serializer.Serialize(new ChatMessage("foo","bar")); // GotChatMessage
+            var json = myproxy.Serializer.Serialize<object>(new {age=21,name="foo"}); // SingleParam
 
-            var msg = new ThorIOClient.Models.Message("GotChatMessage",json,"chat");
+            var d = myproxy.Serializer.DeserializeFromString("foo",typeof(string));
 
-       
+            var msg = new ThorIOClient.Models.Message("SingleParam",json,"chat");
 
             myproxy.Dispatch(msg);
 

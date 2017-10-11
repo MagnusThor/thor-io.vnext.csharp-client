@@ -57,7 +57,7 @@ namespace ThorIOClient
             this.ws = WebSocketWrapper.Create(url);
             proxies.ForEach((ProxyBase proxy) =>
             {
-                proxy.CreateDelagates();
+                proxy.CreateDelegates();
                 proxy.Ws = this.ws;
                 this._proxies.Add(proxy);
 

@@ -10,22 +10,6 @@ using ThorIOClient.Serialization;
 
 namespace ThorIOClient {
 
-    public static class ProxyHelpers {
-
-        // public static void InvokePluginMethod<T>(this T plugin, MethodInfo methodInfo, dynamic[] parameters)
-        //     where T : ProxyBase, IProxyBase
-        // {
-        //     if (methodInfo.ReturnType == typeof(void))
-        //     {
-        //         plugin.InvokeVoid(methodInfo.Name, parameters);
-        //     }else
-        //         throw new NotImplementedException();
-
-
-        // }
-
-    }
-
     public interface IProxyBase {
 
         WebSocketWrapper Ws {
@@ -33,47 +17,7 @@ namespace ThorIOClient {
             set;
         }
     }
-    // public class ProxyBase
-    // {
-    //     // internal void InvokeWithVoid<T>(this T plugin, string key, params dynamic[] p) where T : Proxy
-    // {
-    //       if (plugin.Delegates == null)
-    //         plugin.CreateDelegates();
-    //     if (p == null)
-    //     {            
-    //         plugin.Delegates[key]();
-    //         return;
-    //     }
-    //     switch (p.Length)
-    //     {
-    //         case 0:
-    //             plugin.Delegates[key]();
-    //             break;
-    //         case 1:
-    //             plugin.Delegates[key](p[0]);
-    //             break;
-    //         case 2:
-    //             plugin.Delegates[key](p[0], p[1]);
-    //             break;
-    //         case 3:
-    //             plugin.Delegates[key](p[0], p[1], p[2]);
-    //             break;
-    //         case 4:
-    //             plugin.Delegates[key](p[0], p[1], p[2], p[3]);
-    //             break;
-    //         case 5:
-    //             plugin.Delegates[key](p[0], p[1], p[2], p[3], p[4]);
-    //             break;
-    //         case 6:
-    //             plugin.Delegates[key](p[0], p[1], p[2], p[3], p[4], p[5]);
-    //             break;
-    //         case 7:
-    //             plugin.Delegates[key](p[0], p[1], p[2], p[3], p[4], p[5], p[6]);
-    //             break;                
-    //     }
-    // }
-    // }
-
+    
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public class Invokable: Attribute {
         public string Alias {
@@ -106,7 +50,6 @@ namespace ThorIOClient {
             MethodInfo = methodInfo;
             ParameterInfo = methodInfo.GetParameters();
         }
-
         public MethodInfo MethodInfo {
             get;
             set;
@@ -116,7 +59,6 @@ namespace ThorIOClient {
             private set;
         }
     }
-
 
     public partial class ProxyBase :IProxyBase{
 
@@ -135,7 +77,7 @@ namespace ThorIOClient {
             set;
         }
 
-        public void CreateDelagates() {
+        public void CreateDelegates() {
           
             this.CustomEvents = new List < PluginCustomEventInfo > ();
             this.Delegates = new Dictionary<string, dynamic>();
@@ -176,6 +118,17 @@ namespace ThorIOClient {
                                     Expression.Call(
                                         Expression.Constant(this),
                                         method, parameters[0]), parameters[0]);
+
+                                var f = le.Compile();
+                                Delegates.Add(method.Name, f);
+                            }
+                            break;
+                        case 2:
+                            {
+                                var le = Expression.Lambda(
+                                    Expression.Call(
+                                        Expression.Constant(this),
+                                        method, parameters[0],parameters[1]), parameters[0],parameters[1]);
 
                                 var f = le.Compile();
                                 Delegates.Add(method.Name, f);
@@ -285,45 +238,19 @@ namespace ThorIOClient {
         }
 
         public void Dispatch(IMessage msg) {
+            var hasDelegate = this.Delegates.ContainsKey(msg.Topic);
+            if (hasDelegate) {
+                var method = this.CustomEvents.SingleOrDefault(p => p.MethodInfo.Name == msg.Topic);
+                ThorIOClient.Extensions.ProxyExtensions.InvokePluginMethod(this,method,msg.Data);
 
-       
-            var d = this.Delegates.ContainsKey(msg.Topic); 
-
-            if(d){
-                var t = this.CustomEvents.SingleOrDefault( p => p.MethodInfo.Name == msg.Topic);
-                var dt = this.Serializer.DeserializeFromString(msg.Data,t.ParameterInfo[0].ParameterType);
-        
-                var param = ThorIOClient.Extensions.ProxyExtensions.ExtractMethodParameters(
-                t.ParameterInfo,
-                msg.Data);
-            
-
-
-               
-
-                ThorIOClient.Extensions.ProxyExtensions.InvokeWithVoid(this,t.MethodInfo.Name,param);
-
-
-
-
-
-
-                //this.Delegates[msg.Topic](dt);
-                
-
+            } else {
+                var listener = this.FindListener(msg.Topic);
+                if (listener != null) {
+                    if (listener.fn != null)
+                        listener.fn(msg);
+                } else
+                    return;
             }
-         
-
-
-            var listener = this.FindListener(msg.Topic);
-            if (listener != null) {
-                //System.Diagnostics.Debug.WriteLine("CALLING LISTENER FUNCTION with data: " + msg.Data);
-                if (listener.fn != null)
-                    listener.fn(msg);
-            } else
-                return;
-
-
         }
         private Listener FindListener(string topic) {
             return this.Listeners.Find((Listener pre) => {

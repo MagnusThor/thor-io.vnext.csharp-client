@@ -7,7 +7,7 @@ using ThorIOClient.Serialization;
 namespace ThorIOClient.Extensions {
     public static class ProxyExtensions {
         
-    internal static void InvokePluginMethod<T>(this T proxy, MethodInfo methodInfo, dynamic[] parameters)
+    public static void InvokePluginMethod<T>(this T proxy, MethodInfo methodInfo, dynamic[] parameters)
             where T : ProxyBase, IProxyBase
         {
             if (methodInfo.ReturnType == typeof(void))
@@ -16,11 +16,11 @@ namespace ThorIOClient.Extensions {
             }
         }
  
-        internal static void InvokeWithVoid<T>(this T plugin, string key, params dynamic[] p) 
+        public static void InvokeWithVoid<T>(this T plugin, string key, params dynamic[] p) 
         where T : ProxyBase, IProxyBase
         {
             if (plugin.Delegates == null)
-                plugin.CreateDelagates();
+                plugin.CreateDelegates();
             if (p == null)
             {            
                 plugin.Delegates[key]();
@@ -55,11 +55,11 @@ namespace ThorIOClient.Extensions {
             }
         }
  
-        internal static object InvokeWithReturnValue<T>(this T proxy, string key, params dynamic[] p) 
+        public static object InvokeWithReturnValue<T>(this T proxy, string key, params dynamic[] p) 
         where T : ProxyBase, IProxyBase
         {
             if (proxy.Delegates == null)
-                proxy.CreateDelagates();
+                proxy.CreateDelegates();
                 
             if (p == null)
                 return proxy.Delegates[key]();
@@ -87,7 +87,7 @@ namespace ThorIOClient.Extensions {
             }
         }
  
-        internal static void InvokePluginMethod<T>(this T proxy, PluginCustomEventInfo pluginMethodInfo, string data)
+        public static void InvokePluginMethod<T>(this T proxy, PluginCustomEventInfo pluginMethodInfo, string data)
             where T : ProxyBase, IProxyBase
         {
             try
@@ -104,13 +104,13 @@ namespace ThorIOClient.Extensions {
             }
         }
  
-        internal static void InvokePluginMethod<T>(this T plugin, PluginCustomEventInfo pluginMethodInfo)
+        public static void InvokePluginMethod<T>(this T plugin, PluginCustomEventInfo pluginMethodInfo)
             where T : ProxyBase, IProxyBase
         {
             plugin.InvokePluginMethod(pluginMethodInfo.MethodInfo, null);
         }
  
-        internal static void InvokePluginMethod<T>(this T plugin, PluginCustomEventInfo pluginMethodInfo, ThorIOClient.Models.Message e)
+        public static void InvokePluginMethod<T>(this T plugin, PluginCustomEventInfo pluginMethodInfo, ThorIOClient.Models.Message e)
             where T : ProxyBase, IProxyBase
         {
  
