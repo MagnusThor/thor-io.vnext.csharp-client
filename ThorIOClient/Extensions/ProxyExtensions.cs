@@ -12,6 +12,9 @@ namespace ThorIOClient.Extensions {
             if (methodInfo.ReturnType == typeof(void))
             {
                 proxy.InvokeWithVoid(methodInfo.Name, parameters);
+            }else
+            {
+                    throw new NotImplementedException();
             }
         }
  
@@ -137,7 +140,7 @@ namespace ThorIOClient.Extensions {
         static object GetObject(this System.Type targetType, string json)
         {
               var serializer = new NewtonJsonSerialization();
-            return serializer.DeserializeFromString(json, targetType);
+            return serializer.Deserialize(json, targetType);
         }
       private static bool IsBuiltIn(this System.Type type)
         {
@@ -162,30 +165,30 @@ namespace ThorIOClient.Extensions {
                 {
                     if (parameterInfo[0].ParameterType.IsGenericType)
                     {
-                        methodParameters.Add(serializer.DeserializeFromString(json, parameterInfo[0].ParameterType));
+                        methodParameters.Add(serializer.Deserialize(json, parameterInfo[0].ParameterType));
                     }
                     else
                     {
-                        var param = serializer.DeserializeFromString(json, parameterInfo.Select(p => p.Name).ToArray());
+                        var param = serializer.Deserialize(json, parameterInfo.Select(p => p.Name).ToArray());
  
-                        methodParameters.Add(serializer.DeserializeFromString(param[parameterInfo[0].Name],
+                        methodParameters.Add(serializer.Deserialize(param[parameterInfo[0].Name],
                                                                               parameterInfo[0].ParameterType));
                     }
                 }
                 else
                 {
-                    var pp = serializer.DeserializeFromString(json, parameterInfo[0].ParameterType);
+                    var pp = serializer.Deserialize(json, parameterInfo[0].ParameterType);
                     methodParameters.Add(pp);
                 }                
             }
             else
             {
                 //    //More than one parameter...
-                var parameters = serializer.DeserializeFromString(json, parameterInfo.Select(p => p.Name).ToArray());
+                var parameters = serializer.Deserialize(json, parameterInfo.Select(p => p.Name).ToArray());
  
                 foreach (var pi in parameterInfo)
                 {
-                    methodParameters.Add(serializer.DeserializeFromString(parameters[pi.Name], pi.ParameterType));
+                    methodParameters.Add(serializer.Deserialize(parameters[pi.Name], pi.ParameterType));
                 }
             }
 

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
+using ThorIOClient.Attributes;
 using ThorIOClient.Interface;
 using ThorIOClient.Models;
 using ThorIOClient.Serialization;
@@ -17,39 +18,23 @@ namespace ThorIOClient {
             set;
         }
     }
-    
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    public class Invokable: Attribute {
-        public string Alias {
-            get;
-            set;
-        }
-        public Invokable(string alias) {
-            this.Alias = alias;
-        }
-    }
-
-
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
-    public class ProxyProperties: Attribute {
-        public string Alias {
-            get;
-            private set;
-        }
-        public ProxyProperties(string alias) {
-            this.Alias = alias;
-        }
-
-    }
 
     public interface IPluginCustomEventInfo {
 
     }
     public class PluginCustomEventInfo: IPluginCustomEventInfo {
-        public PluginCustomEventInfo(MethodInfo methodInfo) {
+        public PluginCustomEventInfo(MethodInfo methodInfo,string alias) {
             MethodInfo = methodInfo;
             ParameterInfo = methodInfo.GetParameters();
+
+            this.Alias = alias;
+
+           
+
         }
+
+        public string Alias {get;set;}
+
         public MethodInfo MethodInfo {
             get;
             set;
@@ -59,6 +44,8 @@ namespace ThorIOClient {
             private set;
         }
     }
+
+
 
     public partial class ProxyBase :IProxyBase{
 
@@ -78,20 +65,26 @@ namespace ThorIOClient {
         }
 
         public void CreateDelegates() {
-          
             this.CustomEvents = new List < PluginCustomEventInfo > ();
             this.Delegates = new Dictionary<string, dynamic>();
-
             var t = this.GetType();
-            var ca = t.GetCustomAttributes(typeof (ProxyProperties)).FirstOrDefault() as ProxyProperties;
-
-            this.alias  = ca.Alias;
-
+            var prop = t.GetCustomAttributes(typeof (ProxyProperties)).FirstOrDefault() as ProxyProperties;
+            this.alias  = prop.Alias;
             foreach(var member in t.GetMembers()) {
                 if (member.GetCustomAttributes(typeof (Invokable), true).Length > 0) {
                     var method = t.GetMethod(member.Name);
-                    this.CustomEvents.Add(new PluginCustomEventInfo(methodInfo: method));
-                    var key = member.GetCustomAttribute(typeof (Invokable)) as Invokable;
+                    var methodAlias = member.Name;
+                      var invokable = method.GetCustomAttributes(typeof(Invokable),true).First() as Invokable;
+
+                        if(invokable != null) methodAlias = invokable.Alias;
+                                     
+
+              
+                    this.CustomEvents.Add(new PluginCustomEventInfo(method,methodAlias));
+                    
+                   
+
+                   
                     var parameters = method.GetParameters()
                         .Select(pi => Expression.Parameter(pi.ParameterType, pi.Name)).ToList();
 
@@ -291,9 +284,9 @@ namespace ThorIOClient {
         }
 
         public void Dispatch(IMessage msg) {
-            var hasDelegate = this.Delegates.ContainsKey(msg.Topic);
-            if (hasDelegate) {
-                var method = this.CustomEvents.SingleOrDefault(p => p.MethodInfo.Name == msg.Topic);
+            var hasDelegate = this.CustomEvents.Count( p => p.Alias == msg.Topic);
+            if (hasDelegate > 0) {
+                var method = this.CustomEvents.SingleOrDefault(p => p.Alias == msg.Topic);
                 ThorIOClient.Extensions.ProxyExtensions.InvokePluginMethod(this,method,msg.Data);
 
             } else {

@@ -29,21 +29,21 @@ namespace ThorIOClient
 
        
         private void AddWsListeners() {
-            this.ws.OnConnect((WebSocketWrapper evt) => {
+            this.ws.OnConnect((Action<WebSocketWrapper>)((WebSocketWrapper evt) => {
                 this.OnOpen(evt);
-                this.ws.OnMessage((string data, WebSocketWrapper w) => {
-                    var message = Serializer.Deserialize < Models.Message > (data);
+                this.ws.OnMessage((Action<string, WebSocketWrapper>)((string data, WebSocketWrapper w) => {
+                    var message = Serializer.Deserialize <Models.Message > ((string)data);
 
               
               
-                    var proxy = this.GetProxy < ProxyBase > (message.Controller);
+                    var proxy = this.GetProxy <ProxyBase> (message.Controller);
 
                     if (proxy != null)
                         proxy.Dispatch(message);
                     
                     
-                });
-            });
+                }));
+            }));
             this.ws.OnDisconnect((WebSocketWrapper evt) => {
                 this.OnClose(evt);
             });
