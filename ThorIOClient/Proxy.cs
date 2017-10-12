@@ -19,18 +19,14 @@ namespace ThorIOClient {
         }
     }
 
-    public interface IPluginCustomEventInfo {
+    public interface IProxyCustomMethodInfo {
 
     }
-    public class PluginCustomEventInfo: IPluginCustomEventInfo {
-        public PluginCustomEventInfo(MethodInfo methodInfo,string alias) {
+    public class ProxyCustomMethodInfo: IProxyCustomMethodInfo {
+        public ProxyCustomMethodInfo(MethodInfo methodInfo,string alias) {
             MethodInfo = methodInfo;
             ParameterInfo = methodInfo.GetParameters();
-
             this.Alias = alias;
-
-           
-
         }
 
         public string Alias {get;set;}
@@ -59,13 +55,13 @@ namespace ThorIOClient {
 
         public Dictionary < string, dynamic > Delegates;
 
-        List < PluginCustomEventInfo > CustomEvents {
+        List < ProxyCustomMethodInfo > CustomEvents {
             get;
             set;
         }
 
         public void CreateDelegates() {
-            this.CustomEvents = new List < PluginCustomEventInfo > ();
+            this.CustomEvents = new List < ProxyCustomMethodInfo > ();
             this.Delegates = new Dictionary<string, dynamic>();
             var t = this.GetType();
             var prop = t.GetCustomAttributes(typeof (ProxyProperties)).FirstOrDefault() as ProxyProperties;
@@ -80,7 +76,7 @@ namespace ThorIOClient {
                                      
 
               
-                    this.CustomEvents.Add(new PluginCustomEventInfo(method,methodAlias));
+                    this.CustomEvents.Add(new ProxyCustomMethodInfo(method,methodAlias));
                     
                    
 
@@ -287,7 +283,7 @@ namespace ThorIOClient {
             var hasDelegate = this.CustomEvents.Count( p => p.Alias == msg.Topic);
             if (hasDelegate > 0) {
                 var method = this.CustomEvents.SingleOrDefault(p => p.Alias == msg.Topic);
-                ThorIOClient.Extensions.ProxyExtensions.InvokePluginMethod(this,method,msg.Data);
+                ThorIOClient.Extensions.ProxyExtensions.InvokeProxyMethod(this,method,msg.Data);
 
             } else {
                 var listener = this.FindListener(msg.Topic);

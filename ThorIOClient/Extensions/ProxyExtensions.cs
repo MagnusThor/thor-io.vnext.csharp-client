@@ -5,8 +5,8 @@ using System.Reflection;
 using ThorIOClient.Serialization;
 
 namespace ThorIOClient.Extensions {
-    public static class ProxyExtensions {
-    public static void InvokePluginMethod<T>(this T proxy, MethodInfo methodInfo, dynamic[] parameters)
+    internal static class ProxyExtensions {
+    internal static void InvokeProxyMethod<T>(this T proxy, MethodInfo methodInfo, dynamic[] parameters)
             where T : ProxyBase, IProxyBase
         {
             if (methodInfo.ReturnType == typeof(void))
@@ -18,46 +18,46 @@ namespace ThorIOClient.Extensions {
             }
         }
  
-        public static void InvokeWithVoid<T>(this T plugin, string key, params dynamic[] p) 
+        internal static void InvokeWithVoid<T>(this T proxy, string key, params dynamic[] p) 
         where T : ProxyBase, IProxyBase
         {
-            if (plugin.Delegates == null)
-                plugin.CreateDelegates();
+            if (proxy.Delegates == null)
+                proxy.CreateDelegates();
             if (p == null)
             {            
-                plugin.Delegates[key]();
+                proxy.Delegates[key]();
                 return;
             }
             switch (p.Length)
             {
                 case 0:
-                    plugin.Delegates[key]();
+                    proxy.Delegates[key]();
                     break;
                 case 1:
-                    plugin.Delegates[key](p[0]);
+                    proxy.Delegates[key](p[0]);
                     break;
                 case 2:
-                    plugin.Delegates[key](p[0], p[1]);
+                    proxy.Delegates[key](p[0], p[1]);
                     break;
                 case 3:
-                    plugin.Delegates[key](p[0], p[1], p[2]);
+                    proxy.Delegates[key](p[0], p[1], p[2]);
                     break;
                 case 4:
-                    plugin.Delegates[key](p[0], p[1], p[2], p[3]);
+                    proxy.Delegates[key](p[0], p[1], p[2], p[3]);
                     break;
                 case 5:
-                    plugin.Delegates[key](p[0], p[1], p[2], p[3], p[4]);
+                    proxy.Delegates[key](p[0], p[1], p[2], p[3], p[4]);
                     break;
                 case 6:
-                    plugin.Delegates[key](p[0], p[1], p[2], p[3], p[4], p[5]);
+                    proxy.Delegates[key](p[0], p[1], p[2], p[3], p[4], p[5]);
                     break;
                 case 7:
-                    plugin.Delegates[key](p[0], p[1], p[2], p[3], p[4], p[5], p[6]);
+                    proxy.Delegates[key](p[0], p[1], p[2], p[3], p[4], p[5], p[6]);
                     break;                
             }
         }
  
-        public static object InvokeWithReturnValue<T>(this T proxy, string key, params dynamic[] p) 
+        internal static object InvokeWithReturnValue<T>(this T proxy, string key, params dynamic[] p) 
         where T : ProxyBase, IProxyBase
         {
             if (proxy.Delegates == null)
@@ -89,15 +89,15 @@ namespace ThorIOClient.Extensions {
             }
         }
  
-        public static void InvokePluginMethod<T>(this T proxy, PluginCustomEventInfo pluginMethodInfo, string data)
+        internal static void InvokeProxyMethod<T>(this T proxy, ProxyCustomMethodInfo proxyMethodInfo, string data)
             where T : ProxyBase, IProxyBase
         {
             try
             {
-                proxy.InvokePluginMethod(pluginMethodInfo.MethodInfo,
-                                          pluginMethodInfo.ParameterInfo != null
+                proxy.InvokeProxyMethod(proxyMethodInfo.MethodInfo,
+                                          proxyMethodInfo.ParameterInfo != null
                                               ?
-                                              pluginMethodInfo.ParameterInfo.ExtractMethodParameters(data)
+                                              proxyMethodInfo.ParameterInfo.ExtractMethodParameters(data)
                                               : null);
             }
             catch (Exception ex)
@@ -106,23 +106,23 @@ namespace ThorIOClient.Extensions {
             }
         }
  
-        public static void InvokePluginMethod<T>(this T plugin, PluginCustomEventInfo pluginMethodInfo)
+        internal static void InvokeProxyMethod<T>(this T proxy, ProxyCustomMethodInfo proxyMethodInfo)
             where T : ProxyBase, IProxyBase
         {
-            plugin.InvokePluginMethod(pluginMethodInfo.MethodInfo, null);
+            proxy.InvokeProxyMethod(proxyMethodInfo.MethodInfo, null);
         }
  
-        public static void InvokePluginMethod<T>(this T plugin, PluginCustomEventInfo pluginMethodInfo, ThorIOClient.Models.Message e)
+        internal static void InvokeProxyMethod<T>(this T proxy, ProxyCustomMethodInfo proxyMethodInfo, ThorIOClient.Models.Message e)
             where T : ProxyBase, IProxyBase
         {
  
-            if (pluginMethodInfo.ParameterInfo.Length == 0)
-                plugin.InvokePluginMethod(pluginMethodInfo);
+            if (proxyMethodInfo.ParameterInfo.Length == 0)
+                proxy.InvokeProxyMethod(proxyMethodInfo);
 
-            else if (pluginMethodInfo.ParameterInfo.First().ParameterType == typeof(ThorIOClient.Models.Message))
+            else if (proxyMethodInfo.ParameterInfo.First().ParameterType == typeof(ThorIOClient.Models.Message))
             {
-                plugin.InvokePluginMethod(pluginMethodInfo.MethodInfo,
-                                          pluginMethodInfo.ParameterInfo != null
+                proxy.InvokeProxyMethod(proxyMethodInfo.MethodInfo,
+                                          proxyMethodInfo.ParameterInfo != null
                                               ? new[]
                                                     {
                                                         e
@@ -131,18 +131,18 @@ namespace ThorIOClient.Extensions {
             }
             else
             {
-                plugin.InvokePluginMethod(pluginMethodInfo, e.Data);
+                proxy.InvokeProxyMethod(proxyMethodInfo, e.Data);
             }
         }
     
 
 
-        static object GetObject(this System.Type targetType, string json)
+        internal static object GetObject(this System.Type targetType, string json)
         {
               var serializer = new NewtonJsonSerialization();
             return serializer.Deserialize(json, targetType);
         }
-      private static bool IsBuiltIn(this System.Type type)
+      internal static bool IsBuiltIn(this System.Type type)
         {
             if (type.Namespace.StartsWith("System") && (type.Module.ScopeName == "CommonLanguageRuntimeLibrary" || type.Module.ScopeName == "mscorlib.dll"))
             {
@@ -150,7 +150,7 @@ namespace ThorIOClient.Extensions {
             }
             return false;
         }
-        public static dynamic[] ExtractMethodParameters(this ParameterInfo[] parameterInfo, string json)
+        internal static dynamic[] ExtractMethodParameters(this ParameterInfo[] parameterInfo, string json)
         {
             var methodParameters = new List<dynamic>();
             if (parameterInfo.Length == 0)
