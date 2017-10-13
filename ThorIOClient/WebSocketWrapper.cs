@@ -4,17 +4,12 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ThorIOClient.Extensions;
+using ThorIOClient.Models;
 using ThorIOClient.Queue;
 
 namespace ThorIOClient
 {
-
-
-    public interface IWebSocketWrapper{
-        
-    }
-
-    public class WebSocketWrapper
+    public class WebSocketWrapper : ISocket
     {
 
         public ThreadSafeQueue<byte[]> Queue {get;set;}
@@ -39,7 +34,12 @@ namespace ThorIOClient
             _ws.Options.KeepAliveInterval = TimeSpan.FromSeconds(20);
             _uri = new Uri(uri);
             _cancellationToken = _cancellationTokenSource.Token;
-            
+
+            SendQueued();
+        }
+
+        protected void SendQueued()
+        {
             var queueCancellationToken = new CancellationTokenSource();
                      new Task(action: async () =>
                      {
@@ -51,7 +51,6 @@ namespace ThorIOClient
                         }
                      }).Repeat(queueCancellationToken.Token, TimeSpan.FromSeconds(3));
         }
-
 
         public static WebSocketWrapper Create(string uri)
         {
@@ -192,7 +191,7 @@ namespace ThorIOClient
 
         private async static Task RunInTask(Action action)
         {
-            await Task.Run(action);//Task.Factory.StartNew(action);
+            await Task.Run(action);
         }
     }
 }

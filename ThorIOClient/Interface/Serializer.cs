@@ -6,7 +6,7 @@ namespace ThorIOClient.Interface
     {
         string Serialize<T>(T t);
         T Deserialize<T>(string jsonString);
-       object Deserialize(string json, System.Type type);
+        object Deserialize(string json, System.Type type);
         IDictionary<string,string> Deserialize(string json, params string[] keys);
     }
     

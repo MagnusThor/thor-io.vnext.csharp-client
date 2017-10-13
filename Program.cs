@@ -84,8 +84,9 @@ namespace thorio.csharp
 
 
 
-             var factory = new ThorIOClient.Factory("ws://neordpoc.herokuapp.com",
-                 proxies);
+             var factory = new Factory("ws://neordpoc.herokuapp.com");
+
+            factory.AddProxy(myproxy);
 
             myproxy.OnError = (string err) => {
 
@@ -107,12 +108,10 @@ namespace thorio.csharp
 
             };  
 
-            factory.OnOpen = (WebSocketWrapper wrapper) => {
+            factory.OnOpen = async (WebSocketWrapper wrapper) => {
 
                     Console.WriteLine("Connected to the server...");
-
-
-                    myproxy.Connect();
+                    await myproxy.Connect();
             };
      
 

@@ -11,6 +11,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using thorio.csharp.ThorIOClient;
 using ThorIOClient.Interface;
 
 namespace ThorIOClient
@@ -33,15 +34,10 @@ namespace ThorIOClient
                 this.OnOpen(evt);
                 this.ws.OnMessage((Action<string, WebSocketWrapper>)((string data, WebSocketWrapper w) => {
                     var message = Serializer.Deserialize <Models.Message > ((string)data);
-
-              
-              
                     var proxy = this.GetProxy <ProxyBase> (message.Controller);
 
                     if (proxy != null)
                         proxy.Dispatch(message);
-                    
-                    
                 }));
             }));
             this.ws.OnDisconnect((WebSocketWrapper evt) => {
@@ -49,13 +45,18 @@ namespace ThorIOClient
             });
         }
 
-        public Factory(string url){
-            
+        public Factory(string url, bool autoConnect = true){
+            this.Serializer = new ThorIOClient.Serialization.NewtonJsonSerialization();
+            this._proxies = new List<ProxyBase>();
+            this.ws = WebSocketWrapper.Create(url);
+            this.AddWsListeners();
+
+            if (autoConnect)
+                Task.Run(() => { this.ws.Connect(); });
         }
-        //
-        public Factory(string url, List<ProxyBase> proxies)
+
+        public Factory(string url, List<ProxyBase> proxies, bool autoConnect = true)
         {
-       
             this.Serializer = new ThorIOClient.Serialization.NewtonJsonSerialization();
             this._proxies = new List<ProxyBase>();
             this.ws = WebSocketWrapper.Create(url);
@@ -64,15 +65,33 @@ namespace ThorIOClient
                 proxy.CreateDelegates();
                 proxy.Ws = this.ws;
                 this._proxies.Add(proxy);
-
             });
 
             this.AddWsListeners();
-            this.ws.Connect();
 
-
+            if (autoConnect)
+                Task.Run(() => { this.ws.Connect(); });
         }
 
+        public void AddProxy(ProxyBase proxy)
+        {
+            if (this._proxies == null)
+                this._proxies = new List<ProxyBase>();
+
+            if (!_proxies.Any(x => x.alias.ToLower() == proxy.alias.ToLower()))
+            { 
+                proxy.CreateDelegates();
+                proxy.Ws = this.ws;
+                this._proxies.Add(proxy);
+            }
+
+            //Throw?
+        }
+
+        public void RemoveProxy(ProxyBase proxy)
+        {
+            throw new NotImplementedException();
+        }
 
         public Factory(string url, List<string> proxies)
         {
@@ -80,15 +99,18 @@ namespace ThorIOClient
             this._proxies = new List<ProxyBase>();
             this.ws = WebSocketWrapper.Create(url);
 
-            proxies.ForEach((string proxy) =>
-            {
-                // Create a generic Proxy?  
-                //this._proxies.Add(new ThorIOClient.ProxyBase());
-            });
-
+            if (proxies.Count == 0)
+                this._proxies.Add(new GenericProxy("generic"));
+            else
+            { 
+                proxies.ForEach((string proxy) =>
+                {
+                    // Create a generic Proxy?  
+                    this._proxies.Add(new GenericProxy(proxy));
+                });
+            }
             this.AddWsListeners();
-            this.ws.Connect();
-
+            Task.Run(() => { this.ws.Connect(); });
         }
         public ProxyBase GetProxy<T>(string alias)
         {
@@ -99,9 +121,9 @@ namespace ThorIOClient
             }));
 
         }
-        public WebSocketWrapper Close()
+        public async Task<WebSocketWrapper> Close()
         {
-            this.ws.Close();
+            await this.ws.Close();
             return this.ws;
         }
 

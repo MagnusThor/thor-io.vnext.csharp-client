@@ -14,7 +14,7 @@ namespace ThorIOClient.Extensions {
                 proxy.InvokeWithVoid(methodInfo.Name, parameters);
             }else
             {
-                    throw new NotImplementedException();
+                throw new NotImplementedException();
             }
         }
  
