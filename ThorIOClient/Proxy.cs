@@ -61,6 +61,7 @@ namespace ThorIOClient {
         }
 
         public void CreateDelegates() {
+        
             this.CustomEvents = new List < ProxyCustomMethodInfo > ();
             this.Delegates = new Dictionary<string, dynamic>();
             var t = this.GetType();
@@ -70,9 +71,9 @@ namespace ThorIOClient {
                 if (member.GetCustomAttributes(typeof (Invokable), true).Length > 0) {
                     var method = t.GetMethod(member.Name);
                     var methodAlias = member.Name;
-                      var invokable = method.GetCustomAttributes(typeof(Invokable),true).First() as Invokable;
+                    var invokable = method.GetCustomAttributes(typeof(Invokable),true).First() as Invokable;
 
-                        if(invokable != null) methodAlias = invokable.Alias;
+                    if(invokable != null) methodAlias = invokable.Alias;
                                      
 
               
@@ -193,6 +194,7 @@ namespace ThorIOClient {
             this.Serializer = new NewtonJsonSerialization();
             this.Listeners = new List < Listener > ();
             this.On < Models.ConnectionInformation > ("___open", (Models.ConnectionInformation info) => {
+                this.IsConnected = true;
                 this.OnOpen(info);
             });
 
@@ -215,6 +217,7 @@ namespace ThorIOClient {
             await this.Send(new Models.Message("___connect", "", this.alias));
         }
         private async Task Send(Models.Message message) {
+            // check of IsConnected is true?
             try {
                 await Task.Run(() => {
                     var data = Serializer.Serialize < Models.Message > (message);

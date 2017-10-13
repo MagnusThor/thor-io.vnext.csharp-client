@@ -3,11 +3,22 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ThorIOClient.Extensions;
+using ThorIOClient.Queue;
 
 namespace ThorIOClient
 {
+
+
+    public interface IWebSocketWrapper{
+        
+    }
+
     public class WebSocketWrapper
     {
+
+        public ThreadSafeQueue<byte[]> Queue {get;set;}
+
         private const int ReceiveChunkSize = 1024;
         private const int SendChunkSize = 1024;
 
@@ -22,11 +33,26 @@ namespace ThorIOClient
 
         protected WebSocketWrapper(string uri)
         {
+            Queue = new ThreadSafeQueue<byte[]>();
+
             _ws = new ClientWebSocket();
             _ws.Options.KeepAliveInterval = TimeSpan.FromSeconds(20);
             _uri = new Uri(uri);
             _cancellationToken = _cancellationTokenSource.Token;
+            
+            var queueCancellationToken = new CancellationTokenSource();
+                     new Task(action: async () =>
+                     {
+                         if(this._ws.State ==  WebSocketState.Open){
+                            for (var i = 0; i < this.Queue.Count; i++){
+                                var bytes = this.Queue.Dequeue();
+                                await this.SendMessageAsync(bytes);
+                            }
+                        }
+                     }).Repeat(queueCancellationToken.Token, TimeSpan.FromSeconds(3));
         }
+
+
         public static WebSocketWrapper Create(string uri)
         {
             return new WebSocketWrapper(uri);
@@ -63,17 +89,20 @@ namespace ThorIOClient
 
         public async Task SendMessage(string message)
         {
+            await SendMessageAsync(Encoding.UTF8.GetBytes(message));
+        }
+
+         public async Task SendMessage(byte[] message)
+        {
             await SendMessageAsync(message);
         }
 
-        private async Task SendMessageAsync(string message)
+        private async Task SendMessageAsync(byte[] messageBuffer)
         {
-            if (_ws.State != WebSocketState.Open)
-            {
-                throw new Exception("Connection is not open.");
-            }
-
-            var messageBuffer = Encoding.UTF8.GetBytes(message);
+            if (_ws.State != WebSocketState.Open){
+                this.Queue.Enqueue(messageBuffer);              
+            }else{
+         
             var messagesCount = (int)Math.Ceiling((double)messageBuffer.Length / SendChunkSize);
 
             for (var i = 0; i < messagesCount; i++)
@@ -86,9 +115,9 @@ namespace ThorIOClient
                 {
                     count = messageBuffer.Length - offset;
                 }
-
                 await _ws.SendAsync(new ArraySegment<byte>(messageBuffer, offset, count), WebSocketMessageType.Text, lastMessage, _cancellationToken);
             }
+        }
         }
 
         private async Task ConnectAsync()

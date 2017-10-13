@@ -22,12 +22,12 @@ namespace ThorIOClient
         private WebSocketWrapper ws;
         public Action<WebSocketWrapper> OnOpen;
         public Action<WebSocketWrapper> OnClose;
-
-
         public ISerializer Serializer { get; set; }
 
+        static Factory getInstance(string url){
+                return new Factory(url);
+        }
 
-       
         private void AddWsListeners() {
             this.ws.OnConnect((Action<WebSocketWrapper>)((WebSocketWrapper evt) => {
                 this.OnOpen(evt);
@@ -47,6 +47,10 @@ namespace ThorIOClient
             this.ws.OnDisconnect((WebSocketWrapper evt) => {
                 this.OnClose(evt);
             });
+        }
+
+        public Factory(string url){
+            
         }
         //
         public Factory(string url, List<ProxyBase> proxies)
@@ -70,9 +74,9 @@ namespace ThorIOClient
         }
 
 
-        public Factory(string url, List<string> proxies, ISerializer serializer)
+        public Factory(string url, List<string> proxies)
         {
-            this.Serializer = serializer;
+           this.Serializer = new ThorIOClient.Serialization.NewtonJsonSerialization();
             this._proxies = new List<ProxyBase>();
             this.ws = WebSocketWrapper.Create(url);
 
