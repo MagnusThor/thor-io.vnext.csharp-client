@@ -1,6 +1,6 @@
 using System;
 using ThorIOClient;
-using ThorIOClient.Interface;
+using ThorIOClient.Interfaces;
 
 public partial class Listener{
 
@@ -9,7 +9,7 @@ public partial class Listener{
 
         public Type Type { get; private set; }
 
-        public Listener(string topic,Action<IMessage> fn){
+        public Listener(string topic, Action<IMessage> fn){
             this.Topic = topic;
             this.fn = fn;
         }

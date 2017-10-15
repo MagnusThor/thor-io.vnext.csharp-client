@@ -8,7 +8,8 @@ using System.Timers;
 using ThorIOClient;
 using ThorIOClient.Attributes;
 using ThorIOClient.Extensions;
-using ThorIOClient.Models;
+using ThorIOClient.Interfaces;
+using ThorIOClient.Serialization;
 
 namespace thorio.csharp
 {
@@ -54,68 +55,89 @@ namespace thorio.csharp
 
     }
 
+    public class TestModel
+    {
+        public string Test1 { get; set; }
+    }
+
     class Program
     {
         static void Main(string[] args)
         {
+            //var _proxy = new MyProxy();
+            //_proxy.alias = "test";
+            //_proxy.On<TestModel>("test", (x) => {
+            //    Console.WriteLine(x.Test1);
+            //});
 
-            var proxies = new List<ProxyBase>();
+            //var _data = new NewtonJsonSerialization().Serialize<TestModel>(new TestModel() { Test1 = "OK" });
+            //var _payload = new Message("test", _data , "test");
+
+            //_proxy.Dispatch(_payload);
+
+            //var factory = new Factory("ws://neordpoc.herokuapp.com", new List<string> { })
+
+            //var proxies = new List<ProxyBase>();
             var myproxy = new MyProxy();
 
 
-            proxies.Add(myproxy);
+            //proxies.Add(myproxy);
 
             // myproxy.CreateDelegates();
 
-            // //var json = myproxy.Serializer.Serialize(new ChatMessage("foo","bar")); // GotChatMessage
-            // var json = myproxy.Serializer.Serialize<object>(new {age=21,name="foo"}); // SingleParam
+            //var json = myproxy.Serializer.Serialize(new ChatMessage("foo","bar")); // GotChatMessage
+            //var json = myproxy.Serializer.Serialize<object>(new { age = 21, name = "foo" }); // SingleParam
 
-            // var d = myproxy.Serializer.Deserialize("foo",typeof(string));
+            //var d = myproxy.Serializer.Deserialize("foo", typeof(string));
 
-            // var msg = new ThorIOClient.Models.Message("SingleParam",json,"chat");
+            //var msg = new Message("SingleParam", json, "chat");
 
-        
-            // myproxy.Dispatch(msg);
 
-         
-
-            // proxies.Add(myproxy);
+            //myproxy.Dispatch(msg);
 
 
 
+            //proxies.Add(myproxy);
 
-             var factory = new Factory("ws://neordpoc.herokuapp.com");
+
+
+
+            var factory = new Factory("ws://neordpoc.herokuapp.com");
 
             factory.AddProxy(myproxy);
 
-            myproxy.OnError = (string err) => {
+            myproxy.OnError = (string err) =>
+            {
 
-            };  
-
-
-            myproxy.OnOpen = (ConnectionInformation ci) => {
-                    Console.WriteLine("Connected to controller - chat");
-
-                         var timer = new System.Timers.Timer(4000);
-                        timer.Elapsed += (sender, e) =>
-                        {
-
-                            myproxy.SendChatMessageChat(new ChatMessage("Hello World from ProxyBase","Church boy"));
-
-                        };
-
-                        timer.Start();
-
-            };  
-
-            factory.OnOpen = async (WebSocketWrapper wrapper) => {
-
-                    Console.WriteLine("Connected to the server...");
-                    await myproxy.Connect();
             };
-     
 
-          
+
+            myproxy.OnOpen = (ConnectionInformation ci) =>
+            {
+                Console.WriteLine("Connected to controller - chat");
+
+                var timer = new System.Timers.Timer(4000);
+                timer.Elapsed += (sender, e) =>
+                {
+
+                    myproxy.SendChatMessageChat(new ChatMessage("Hello World from ProxyBase", "Church boy"));
+
+                };
+
+                timer.Start();
+
+            };
+
+            factory.OnOpen = async (ISocket wrapper) =>
+            {
+
+                Console.WriteLine("Connected to the server...");
+                await myproxy.Connect();
+                myproxy.SendChatMessageChat(new ChatMessage("Hello World from ProxyBase (ISocket)", "Church boy"));
+            };
+
+
+
 
             //     Console.WriteLine("Thor-io.vnext .NET Client.");
 
@@ -201,7 +223,7 @@ namespace thorio.csharp
 
             // // Create a new dataFrame 
             // var dataFrame = new ThorIOClient.Protocol.DataFrame(data);
-        
+
             // foreach (var b in data)
             // {
             //     Console.Write(b.ToString()+ ",");

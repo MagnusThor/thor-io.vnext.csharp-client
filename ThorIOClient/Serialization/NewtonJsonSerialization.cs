@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 using System;
-using ThorIOClient.Interface;
+using ThorIOClient.Interfaces;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
@@ -85,7 +85,5 @@ namespace ThorIOClient.Serialization
             var obj = JsonConvert.DeserializeObject<Newtonsoft.Json.Linq.JObject>(json);    
             return new Dictionary<string, string>(obj.Properties().ToDictionary(pair => pair.Name, pair => pair.Value.ToString()));
         }
-
-
     }
 }

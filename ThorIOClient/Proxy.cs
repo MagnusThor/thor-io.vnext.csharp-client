@@ -4,52 +4,21 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
+using thorio.csharp.ThorIOClient.Interfaces;
+using thorio.csharp.ThorIOClient.Models;
 using ThorIOClient.Attributes;
-using ThorIOClient.Interface;
-using ThorIOClient.Models;
+using ThorIOClient.Interfaces;
 using ThorIOClient.Serialization;
 
 namespace ThorIOClient {
 
-    public interface IProxyBase {
-
-        WebSocketWrapper Ws {
-            get;
-            set;
-        }
-    }
-
-    public interface IProxyCustomMethodInfo {
-
-    }
-    public class ProxyCustomMethodInfo: IProxyCustomMethodInfo {
-        public ProxyCustomMethodInfo(MethodInfo methodInfo,string alias) {
-            MethodInfo = methodInfo;
-            ParameterInfo = methodInfo.GetParameters();
-            this.Alias = alias;
-        }
-
-        public string Alias {get;set;}
-
-        public MethodInfo MethodInfo {
-            get;
-            set;
-        }
-        public ParameterInfo[] ParameterInfo {
-            get;
-            private set;
-        }
-    }
-
-
-
-    public partial class ProxyBase :IProxyBase{
+    public partial class ProxyBase : IProxyBase{
 
         public ISerializer Serializer {
             get;
             set;
         }
-        public WebSocketWrapper Ws;
+        public ISocket Ws;
         public string alias;
         private List < Listener > Listeners;
 
@@ -62,7 +31,7 @@ namespace ThorIOClient {
 
         public void CreateDelegates() {
         
-            this.CustomEvents = new List < ProxyCustomMethodInfo > ();
+            this.CustomEvents = new List <ProxyCustomMethodInfo > ();
             this.Delegates = new Dictionary<string, dynamic>();
             var t = this.GetType();
             var prop = t.GetCustomAttributes(typeof (ProxyProperties)).FirstOrDefault() as ProxyProperties;
@@ -193,7 +162,7 @@ namespace ThorIOClient {
         public ProxyBase() {
             this.Serializer = new NewtonJsonSerialization();
             this.Listeners = new List < Listener > ();
-            this.On < Models.ConnectionInformation > ("___open", (Models.ConnectionInformation info) => {
+            this.On < Interfaces.ConnectionInformation > ("___open", (Interfaces.ConnectionInformation info) => {
                 this.IsConnected = true;
                 this.OnOpen(info);
             });
@@ -203,24 +172,24 @@ namespace ThorIOClient {
             });
 
         }
-        public Action < Models.ConnectionInformation > OnOpen;
-        public Action < Models.ConnectionInformation > OnClose;
+        public Action < Interfaces.ConnectionInformation > OnOpen;
+        public Action < Interfaces.ConnectionInformation > OnClose;
         public Action < string > OnError;
 
         public bool IsConnected {
             get;
             private set;
         }
-        WebSocketWrapper IProxyBase.Ws { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        ISocket IProxyBase.Ws { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
         public async Task Connect() {
-            await this.Send(new Models.Message("___connect", "", this.alias));
+            await this.Send(new Interfaces.Message("___connect", "", this.alias));
         }
-        private async Task Send(Models.Message message) {
+        private async Task Send(Interfaces.Message message) {
             // check of IsConnected is true?
             try {
                 await Task.Run(() => {
-                    var data = Serializer.Serialize < Models.Message > (message);
+                    var data = Serializer.Serialize < Interfaces.Message > (message);
                     this.Ws.SendMessage(data);
                 });
             } catch (Exception ex) {
@@ -229,7 +198,7 @@ namespace ThorIOClient {
 
         }
         public async Task < ProxyBase > Close() {
-            await this.Send(new Models.Message("___close", "", this.alias));
+            await this.Send(new Interfaces.Message("___close", "", this.alias));
             return this;
         }
         public ProxyBase On < T > (string topic, Action < T > fn) {
@@ -252,7 +221,7 @@ namespace ThorIOClient {
         }
         public async Task < ProxyBase > Subscribe < T > (string topic, Action < T > fn) {
 
-            var message = new Models.Message("___subscribe", Serializer.Serialize < Models.Subscription > (new Models.Subscription(topic, this.alias)), this.alias);
+            var message = new Interfaces.Message("___subscribe", Serializer.Serialize < Interfaces.Subscription > (new Interfaces.Subscription(topic, this.alias)), this.alias);
 
             await this.Send(message);
             this.On < T > (topic, fn);
@@ -262,14 +231,14 @@ namespace ThorIOClient {
         }
 
         public async Task < ProxyBase > UnSubscribe(string topic) {
-            var message = new Models.Message("___unsubscribe",
-                Serializer.Serialize < Models.Subscription > (new Models.Subscription(topic, this.alias)), this.alias);
+            var message = new Interfaces.Message("___unsubscribe",
+                Serializer.Serialize < Interfaces.Subscription > (new Interfaces.Subscription(topic, this.alias)), this.alias);
             await this.Send(message);
             this.Off(topic);
             return this;
         }
         public async Task < ProxyBase > Invoke < T > (string topic, T data) {
-            await this.Send(new Models.Message(topic, Serializer.Serialize < T > (data), this.alias));
+            await this.Send(new Interfaces.Message(topic, Serializer.Serialize < T > (data), this.alias));
             return this;
         }
         public async Task < ProxyBase > Publish < T > (string topic, T data) {
@@ -283,8 +252,8 @@ namespace ThorIOClient {
         }
 
         public void Dispatch(IMessage msg) {
-            var hasDelegate = this.CustomEvents.Count( p => p.Alias == msg.Topic);
-            if (hasDelegate > 0) {
+            var hasDelegate = this.CustomEvents != null && this.CustomEvents.Count( p => p.Alias == msg.Topic) > 0;
+            if (this.CustomEvents != null) {
                 var method = this.CustomEvents.SingleOrDefault(p => p.Alias == msg.Topic);
                 ThorIOClient.Extensions.ProxyExtensions.InvokeProxyMethod(this,method,msg.Data);
 
@@ -303,10 +272,7 @@ namespace ThorIOClient {
             });
         }
 
-
     }
-
-
 }
 
 

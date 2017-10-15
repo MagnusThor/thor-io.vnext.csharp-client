@@ -4,7 +4,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ThorIOClient.Extensions;
-using ThorIOClient.Models;
+using ThorIOClient.Interfaces;
 using ThorIOClient.Queue;
 
 namespace ThorIOClient
@@ -22,11 +22,11 @@ namespace ThorIOClient
         private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
         private readonly CancellationToken _cancellationToken;
 
-        private Action<WebSocketWrapper> _onConnected;
-        private Action<string, WebSocketWrapper> _onMessage;
-        private Action<WebSocketWrapper> _onDisconnected;
+        private Action<ISocket> _onConnected;
+        private Action<string, ISocket> _onMessage;
+        private Action<ISocket> _onDisconnected;
 
-        protected WebSocketWrapper(string uri)
+        public WebSocketWrapper(string uri)
         {
             Queue = new ThreadSafeQueue<byte[]>();
 
@@ -52,35 +52,35 @@ namespace ThorIOClient
                      }).Repeat(queueCancellationToken.Token, TimeSpan.FromSeconds(3));
         }
 
-        public static WebSocketWrapper Create(string uri)
+        public static ISocket Create(string uri)
         {
             return new WebSocketWrapper(uri);
         }
 
-        public async Task<WebSocketWrapper> Connect()
+        public async Task<ISocket> Connect()
         {
             await ConnectAsync();
             return this;
         }
 
-        public async Task<WebSocketWrapper> Close()
+        public async Task<ISocket> Close()
         {
             await this._ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by client", CancellationToken.None);
             return this;
         }
-        public WebSocketWrapper OnConnect(Action<WebSocketWrapper> onConnect)
+        public ISocket OnConnect(Action<ISocket> onConnect)
         {
             _onConnected = onConnect;
             return this;
         }
 
-        public WebSocketWrapper OnDisconnect(Action<WebSocketWrapper> onDisconnect)
+        public ISocket OnDisconnect(Action<ISocket> onDisconnect)
         {
             _onDisconnected = onDisconnect;
             return this;
         }
 
-        public WebSocketWrapper OnMessage(Action<string, WebSocketWrapper> onMessage)
+        public ISocket OnMessage(Action<string, ISocket> onMessage)
         {
             _onMessage = onMessage;
             return this;

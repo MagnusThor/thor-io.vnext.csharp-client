@@ -2,7 +2,7 @@
 
 using Newtonsoft.Json;
 
-namespace ThorIOClient.Models
+namespace ThorIOClient.Interfaces
 {
     // [DataContract]
     public class Subscription{

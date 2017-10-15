@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace ThorIOClient.Interface
+namespace ThorIOClient.Interfaces
 {
     public interface ISerializer
     {
@@ -9,6 +9,4 @@ namespace ThorIOClient.Interface
         object Deserialize(string json, System.Type type);
         IDictionary<string,string> Deserialize(string json, params string[] keys);
     }
-    
-
 }

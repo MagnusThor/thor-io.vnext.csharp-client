@@ -1,4 +1,4 @@
-namespace ThorIOClient.Models
+namespace ThorIOClient.Interfaces
 {
     public class ConnectionInformation
     {

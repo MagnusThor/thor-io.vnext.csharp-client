@@ -1,9 +1,7 @@
 using System;
 using Newtonsoft.Json;
-// using System.Runtime.Serialization;
-using ThorIOClient.Interface;
 
-namespace ThorIOClient.Models
+namespace ThorIOClient.Interfaces
 {
  
     // [DataContract]

@@ -12,7 +12,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using thorio.csharp.ThorIOClient;
-using ThorIOClient.Interface;
+using thorio.csharp.ThorIOClient.Interfaces;
+using ThorIOClient.Interfaces;
 
 namespace ThorIOClient
 {
@@ -20,9 +21,9 @@ namespace ThorIOClient
     public partial class Factory
     {
         private List<ProxyBase> _proxies;
-        private WebSocketWrapper ws;
-        public Action<WebSocketWrapper> OnOpen;
-        public Action<WebSocketWrapper> OnClose;
+        private ISocket ws;
+        public Action<ISocket> OnOpen;
+        public Action<ISocket> OnClose;
         public ISerializer Serializer { get; set; }
 
         static Factory getInstance(string url){
@@ -30,36 +31,45 @@ namespace ThorIOClient
         }
 
         private void AddWsListeners() {
-            this.ws.OnConnect((Action<WebSocketWrapper>)((WebSocketWrapper evt) => {
+            this.ws.OnConnect((Action<ISocket>)((ISocket evt) => {
                 this.OnOpen(evt);
-                this.ws.OnMessage((Action<string, WebSocketWrapper>)((string data, WebSocketWrapper w) => {
-                    var message = Serializer.Deserialize <Models.Message > ((string)data);
+                this.ws.OnMessage((Action<string, ISocket>)((string data, ISocket w) => {
+                    var message = Serializer.Deserialize <Interfaces.Message > ((string)data);
                     var proxy = this.GetProxy <ProxyBase> (message.Controller);
 
                     if (proxy != null)
                         proxy.Dispatch(message);
                 }));
             }));
-            this.ws.OnDisconnect((WebSocketWrapper evt) => {
+            this.ws.OnDisconnect((ISocket evt) => {
                 this.OnClose(evt);
             });
         }
 
-        public Factory(string url, bool autoConnect = true){
+        public Factory(string url, ISocket socket = null, bool autoConnect = true){
             this.Serializer = new ThorIOClient.Serialization.NewtonJsonSerialization();
             this._proxies = new List<ProxyBase>();
-            this.ws = WebSocketWrapper.Create(url);
+
+            if (socket == null)
+                socket = new WebSocketWrapper(url);
+
+            this.ws = socket;
+
             this.AddWsListeners();
 
             if (autoConnect)
                 Task.Run(() => { this.ws.Connect(); });
         }
-
-        public Factory(string url, List<ProxyBase> proxies, bool autoConnect = true)
+        public Factory(string url, List<ProxyBase> proxies, ISocket socket = null, bool autoConnect = true)
         {
             this.Serializer = new ThorIOClient.Serialization.NewtonJsonSerialization();
             this._proxies = new List<ProxyBase>();
-            this.ws = WebSocketWrapper.Create(url);
+
+            if (socket == null)
+                socket = new WebSocketWrapper(url);
+
+            this.ws = socket;
+
             proxies.ForEach((ProxyBase proxy) =>
             {
                 proxy.CreateDelegates();
@@ -67,6 +77,30 @@ namespace ThorIOClient
                 this._proxies.Add(proxy);
             });
 
+            this.AddWsListeners();
+
+            if (autoConnect)
+                Task.Run(() => { this.ws.Connect(); });
+        }
+        public Factory(string url, List<string> proxies, ISocket socket = null, bool autoConnect = true)
+        {
+           this.Serializer = new ThorIOClient.Serialization.NewtonJsonSerialization();
+            this._proxies = new List<ProxyBase>();
+
+            if (socket == null)
+                socket = new WebSocketWrapper(url);
+
+            this.ws = socket;
+
+            if (proxies.Count == 0)
+                this._proxies.Add(new GenericProxy("generic"));
+            else
+            { 
+                proxies.ForEach((string proxy) =>
+                {
+                    this._proxies.Add(new GenericProxy(proxy));
+                });
+            }
             this.AddWsListeners();
 
             if (autoConnect)
@@ -84,49 +118,35 @@ namespace ThorIOClient
                 proxy.Ws = this.ws;
                 this._proxies.Add(proxy);
             }
-
-            //Throw?
         }
-
-        public void RemoveProxy(ProxyBase proxy)
+        public async Task RemoveProxy(ProxyBase proxy)
         {
-            throw new NotImplementedException();
+            await proxy.Close();
+            this._proxies.Remove(proxy);
         }
 
-        public Factory(string url, List<string> proxies)
+        //need to discuss IProxybase (and create delegates call issue)
+        public IEnumerable<IProxyBase> GetDeclaredProxies()
         {
-           this.Serializer = new ThorIOClient.Serialization.NewtonJsonSerialization();
-            this._proxies = new List<ProxyBase>();
-            this.ws = WebSocketWrapper.Create(url);
+            var instances = from t in Assembly.GetExecutingAssembly().GetTypes()
+                            where t.GetInterfaces().Contains(typeof(IProxyBase)) && t.GetConstructor(Type.EmptyTypes) != null
+                            select Activator.CreateInstance(t) as IProxyBase;
 
-            if (proxies.Count == 0)
-                this._proxies.Add(new GenericProxy("generic"));
-            else
-            { 
-                proxies.ForEach((string proxy) =>
-                {
-                    // Create a generic Proxy?  
-                    this._proxies.Add(new GenericProxy(proxy));
-                });
-            }
-            this.AddWsListeners();
-            Task.Run(() => { this.ws.Connect(); });
+            return instances;
         }
+
         public ProxyBase GetProxy<T>(string alias)
         {
-
             return (this._proxies.Find((ProxyBase pre) =>
             {
                 return pre.alias == alias;
             }));
 
         }
-        public async Task<WebSocketWrapper> Close()
+        public async Task<ISocket> Close()
         {
             await this.ws.Close();
             return this.ws;
         }
-
-
     }
 }

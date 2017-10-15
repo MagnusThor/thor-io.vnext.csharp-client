@@ -1,6 +1,6 @@
 using System;
 
-namespace ThorIOClient.Models
+namespace ThorIOClient.Interfaces
 {
 
     public class NetworkEventMessage<T> : INetworkMessageEvent
