@@ -2,8 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using thorio.csharp.ThorIOClient.Interfaces;
-using thorio.csharp.ThorIOClient.Models;
+using ThorIOClient.Interfaces;
 using ThorIOClient.Serialization;
 
 namespace ThorIOClient.Extensions {
@@ -16,7 +15,7 @@ namespace ThorIOClient.Extensions {
                 proxy.InvokeWithVoid(methodInfo.Name, parameters);
             }else
             {
-                throw new NotImplementedException();
+                    throw new NotImplementedException();
             }
         }
  
@@ -114,14 +113,14 @@ namespace ThorIOClient.Extensions {
             proxy.InvokeProxyMethod(proxyMethodInfo.MethodInfo, null);
         }
  
-        internal static void InvokeProxyMethod<T>(this T proxy, ProxyCustomMethodInfo proxyMethodInfo, ThorIOClient.Interfaces.Message e)
+        internal static void InvokeProxyMethod<T>(this T proxy, ProxyCustomMethodInfo proxyMethodInfo, ThorIOClient.Models.Message e)
             where T : ProxyBase, IProxyBase
         {
  
             if (proxyMethodInfo.ParameterInfo.Length == 0)
                 proxy.InvokeProxyMethod(proxyMethodInfo);
 
-            else if (proxyMethodInfo.ParameterInfo.First().ParameterType == typeof(ThorIOClient.Interfaces.Message))
+            else if (proxyMethodInfo.ParameterInfo.First().ParameterType == typeof(ThorIOClient.Models.Message))
             {
                 proxy.InvokeProxyMethod(proxyMethodInfo.MethodInfo,
                                           proxyMethodInfo.ParameterInfo != null

@@ -12,8 +12,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using thorio.csharp.ThorIOClient;
-using thorio.csharp.ThorIOClient.Interfaces;
+
 using ThorIOClient.Interfaces;
+using ThorIOClient.Models;
 
 namespace ThorIOClient
 {
@@ -34,7 +35,7 @@ namespace ThorIOClient
             this.ws.OnConnect((Action<ISocket>)((ISocket evt) => {
                 this.OnOpen(evt);
                 this.ws.OnMessage((Action<string, ISocket>)((string data, ISocket w) => {
-                    var message = Serializer.Deserialize <Interfaces.Message > ((string)data);
+                    var message = Serializer.Deserialize <Message > ((string)data);
                     var proxy = this.GetProxy <ProxyBase> (message.Controller);
 
                     if (proxy != null)

@@ -9,6 +9,7 @@ using ThorIOClient;
 using ThorIOClient.Attributes;
 using ThorIOClient.Extensions;
 using ThorIOClient.Interfaces;
+using ThorIOClient.Models;
 using ThorIOClient.Serialization;
 
 namespace thorio.csharp
@@ -102,13 +103,13 @@ namespace thorio.csharp
 
 
 
-            var factory = new Factory("ws://neordpoc.herokuapp.com");
+            var factory = new Factory("ws://localhost:1337");
 
             factory.AddProxy(myproxy);
 
-            myproxy.OnError = (string err) =>
+            myproxy.OnError = (ErrorMessage err) =>
             {
-
+                    Console.WriteLine(err.Message);
             };
 
 

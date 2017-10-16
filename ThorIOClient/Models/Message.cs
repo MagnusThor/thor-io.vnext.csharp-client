@@ -1,13 +1,21 @@
 using System;
 using Newtonsoft.Json;
+using ThorIOClient.Interfaces;
 
-namespace ThorIOClient.Interfaces
-{
+namespace ThorIOClient.Models
+{   
+
+    public class ErrorMessage{
+            public ErrorMessage(string message){
+                this.Message = message;
+            }
+            [JsonProperty("message")]
+            public object Message { get;  set; }
+    }
  
     // [DataContract]
     public class Message :IMessage
     {
-
         // [DataMember(Name = "D", IsRequired = false)]
         [JsonProperty("D")]
         public string Data { get; private set; }

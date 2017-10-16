@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
-using thorio.csharp.ThorIOClient.Interfaces;
+using  ThorIOClient.Interfaces;
 
-namespace thorio.csharp.ThorIOClient.Models
+namespace ThorIOClient.Models
 {
     public class ProxyCustomMethodInfo : IProxyCustomMethodInfo
     {

@@ -4,11 +4,12 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
-using thorio.csharp.ThorIOClient.Interfaces;
-using thorio.csharp.ThorIOClient.Models;
+
+using ThorIOClient.Models;
 using ThorIOClient.Attributes;
-using ThorIOClient.Interfaces;
+
 using ThorIOClient.Serialization;
+using ThorIOClient.Interfaces;
 
 namespace ThorIOClient {
 
@@ -162,43 +163,44 @@ namespace ThorIOClient {
         public ProxyBase() {
             this.Serializer = new NewtonJsonSerialization();
             this.Listeners = new List < Listener > ();
-            this.On < Interfaces.ConnectionInformation > ("___open", (Interfaces.ConnectionInformation info) => {
+            this.On < ConnectionInformation > ("___open", (ConnectionInformation info) => {
                 this.IsConnected = true;
                 this.OnOpen(info);
             });
 
-            this.On < string > ("___error", (string err) => {
-                this.OnError(err);
+            this.On < ErrorMessage > ("___error", (ErrorMessage err) => {
+                if(this.OnError != null)
+                  this.OnError(err);
             });
 
         }
-        public Action < Interfaces.ConnectionInformation > OnOpen;
-        public Action < Interfaces.ConnectionInformation > OnClose;
-        public Action < string > OnError;
+        public Action < ConnectionInformation > OnOpen;
+        public Action < ConnectionInformation > OnClose;
+        public Action < ErrorMessage > OnError;
 
         public bool IsConnected {
             get;
-            private set;
+            set;
         }
         ISocket IProxyBase.Ws { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
         public async Task Connect() {
-            await this.Send(new Interfaces.Message("___connect", "", this.alias));
+            await this.Send(new Message("___connect", "", this.alias));
         }
-        private async Task Send(Interfaces.Message message) {
+        private async Task Send(Message message) {
             // check of IsConnected is true?
             try {
                 await Task.Run(() => {
-                    var data = Serializer.Serialize < Interfaces.Message > (message);
+                    var data = Serializer.Serialize < Message > (message);
                     this.Ws.SendMessage(data);
                 });
             } catch (Exception ex) {
-                this.OnError(ex.Message);
+                this.OnError(new ErrorMessage(ex.Message));
             }
 
         }
         public async Task < ProxyBase > Close() {
-            await this.Send(new Interfaces.Message("___close", "", this.alias));
+            await this.Send(new Message("___close", "", this.alias));
             return this;
         }
         public ProxyBase On < T > (string topic, Action < T > fn) {
@@ -206,6 +208,7 @@ namespace ThorIOClient {
             if (typeof (T) == typeof (IMessage)) {
                 this.Listeners.Add(new Listener(topic, message => fn((T) message)));
             } else {
+                
                 var listener = new Listener(topic, message => fn(Serializer.Deserialize < T > (message.Data)));
                 this.Listeners.Add(listener);
             }
@@ -220,25 +223,22 @@ namespace ThorIOClient {
 
         }
         public async Task < ProxyBase > Subscribe < T > (string topic, Action < T > fn) {
-
-            var message = new Interfaces.Message("___subscribe", Serializer.Serialize < Interfaces.Subscription > (new Interfaces.Subscription(topic, this.alias)), this.alias);
-
+            var message = new Message("___subscribe", Serializer.Serialize < Subscription > (new Subscription(topic, this.alias)),
+                 this.alias);
             await this.Send(message);
             this.On < T > (topic, fn);
-
             return this;
-
         }
 
         public async Task < ProxyBase > UnSubscribe(string topic) {
-            var message = new Interfaces.Message("___unsubscribe",
-                Serializer.Serialize < Interfaces.Subscription > (new Interfaces.Subscription(topic, this.alias)), this.alias);
+            var message = new Message("___unsubscribe",
+                Serializer.Serialize < Subscription > (new Subscription(topic, this.alias)), this.alias);
             await this.Send(message);
             this.Off(topic);
             return this;
         }
         public async Task < ProxyBase > Invoke < T > (string topic, T data) {
-            await this.Send(new Interfaces.Message(topic, Serializer.Serialize < T > (data), this.alias));
+            await this.Send(new Message(topic, Serializer.Serialize < T > (data), this.alias));
             return this;
         }
         public async Task < ProxyBase > Publish < T > (string topic, T data) {
@@ -252,8 +252,8 @@ namespace ThorIOClient {
         }
 
         public void Dispatch(IMessage msg) {
-            var hasDelegate = this.CustomEvents != null && this.CustomEvents.Count( p => p.Alias == msg.Topic) > 0;
-            if (this.CustomEvents != null) {
+            var hasCustomEvent = this.CustomEvents != null && this.CustomEvents.Count( p => p.Alias == msg.Topic) > 0;
+            if (hasCustomEvent) {
                 var method = this.CustomEvents.SingleOrDefault(p => p.Alias == msg.Topic);
                 ThorIOClient.Extensions.ProxyExtensions.InvokeProxyMethod(this,method,msg.Data);
 
@@ -274,21 +274,3 @@ namespace ThorIOClient {
 
     }
 }
-
-
-
-// private Func<int, string> FindMethodByAccessor(string accessor)
-// {
-//     return;
-//     // var desiredMethod = this.GetType().GetMethods()
-//     //           .Where(x => x.GetCustomAttributes(typeof(Invokable), false).Length > 0)
-//     //           .Where(y => (y.GetCustomAttributes(typeof(Invokable), false).First() as Invokable).Accessor == accessor)
-//     //           .FirstOrDefault();
-//     // if (desiredMethod == null) return null;
-
-//     // ParameterExpression px = Expression.Parameter(typeof(int));
-//     // ConstantExpression instance = Expression.Constant(this);
-//     // return Expression.Lambda<Func<int, string>>(
-//     //    Expression.Call(instance, desiredMethod, new Expression[] { px }), px).Compile();
-
-// }

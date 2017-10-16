@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using ThorIOClient.Interfaces;
 
-namespace thorio.csharp.ThorIOClient.Interfaces
+
+namespace ThorIOClient.Interfaces
 {
     public interface IProxyBase
     {
