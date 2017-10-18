@@ -185,7 +185,7 @@ namespace ThorIOClient {
         ISocket IProxyBase.Ws { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
         public async Task Connect() {
-            await this.Send(new Message("___connect", "", this.alias));
+            await this.Send(new Message("___connect", "", this.alias)).ConfigureAwait(false);
         }
         private async Task Send(Message message) {
             // check of IsConnected is true?
@@ -193,14 +193,14 @@ namespace ThorIOClient {
                 await Task.Run(() => {
                     var data = Serializer.Serialize < Message > (message);
                     this.Ws.SendMessage(data);
-                });
+                }).ConfigureAwait(false);
             } catch (Exception ex) {
                 this.OnError(new ErrorMessage(ex.Message));
             }
 
         }
         public async Task < ProxyBase > Close() {
-            await this.Send(new Message("___close", "", this.alias));
+            await this.Send(new Message("___close", "", this.alias)).ConfigureAwait(false);
             return this;
         }
         public ProxyBase On < T > (string topic, Action < T > fn) {
@@ -225,7 +225,7 @@ namespace ThorIOClient {
         public async Task < ProxyBase > Subscribe < T > (string topic, Action < T > fn) {
             var message = new Message("___subscribe", Serializer.Serialize < Subscription > (new Subscription(topic, this.alias)),
                  this.alias);
-            await this.Send(message);
+            await this.Send(message).ConfigureAwait(false);
             this.On < T > (topic, fn);
             return this;
         }
@@ -233,21 +233,21 @@ namespace ThorIOClient {
         public async Task < ProxyBase > UnSubscribe(string topic) {
             var message = new Message("___unsubscribe",
                 Serializer.Serialize < Subscription > (new Subscription(topic, this.alias)), this.alias);
-            await this.Send(message);
+            await this.Send(message).ConfigureAwait(false);
             this.Off(topic);
             return this;
         }
         public async Task < ProxyBase > Invoke < T > (string topic, T data) {
-            await this.Send(new Message(topic, Serializer.Serialize < T > (data), this.alias));
+            await this.Send(new Message(topic, Serializer.Serialize < T > (data), this.alias)).ConfigureAwait(false);
             return this;
         }
         public async Task < ProxyBase > Publish < T > (string topic, T data) {
-            await this.Invoke < T > (topic, data);
+            await this.Invoke < T > (topic, data).ConfigureAwait(false);
             return this;
         }
 
         public async Task < ProxyBase > SetProperty < T > (string propName, T propValue) {
-            await this.Invoke < T > (propName, propValue);
+            await this.Invoke < T > (propName, propValue).ConfigureAwait(false);
             return this;
         }
 

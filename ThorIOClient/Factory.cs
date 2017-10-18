@@ -122,7 +122,7 @@ namespace ThorIOClient
         }
         public async Task RemoveProxy(ProxyBase proxy)
         {
-            await proxy.Close();
+            await proxy.Close().ConfigureAwait(false);
             this._proxies.Remove(proxy);
         }
 
@@ -146,7 +146,7 @@ namespace ThorIOClient
         }
         public async Task<ISocket> Close()
         {
-            await this.ws.Close();
+            await this.ws.Close().ConfigureAwait(false);
             return this.ws;
         }
     }

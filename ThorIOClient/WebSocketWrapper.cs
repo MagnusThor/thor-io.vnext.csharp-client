@@ -46,7 +46,7 @@ namespace ThorIOClient
                          if(this._ws.State ==  WebSocketState.Open){
                             for (var i = 0; i < this.Queue.Count; i++){
                                 var bytes = this.Queue.Dequeue();
-                                await this.SendMessageAsync(bytes);
+                                await this.SendMessageAsync(bytes).ConfigureAwait(false);
                             }
                         }
                      }).Repeat(queueCancellationToken.Token, TimeSpan.FromSeconds(3));
@@ -59,13 +59,13 @@ namespace ThorIOClient
 
         public async Task<ISocket> Connect()
         {
-            await ConnectAsync();
+            await ConnectAsync().ConfigureAwait(false);
             return this;
         }
 
         public async Task<ISocket> Close()
         {
-            await this._ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by client", CancellationToken.None);
+            await this._ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by client", CancellationToken.None).ConfigureAwait(false);
             return this;
         }
         public ISocket OnConnect(Action<ISocket> onConnect)
@@ -88,12 +88,12 @@ namespace ThorIOClient
 
         public async Task SendMessage(string message)
         {
-            await SendMessageAsync(Encoding.UTF8.GetBytes(message));
+            await SendMessageAsync(Encoding.UTF8.GetBytes(message)).ConfigureAwait(false);
         }
 
          public async Task SendMessage(byte[] message)
         {
-            await SendMessageAsync(message);
+            await SendMessageAsync(message).ConfigureAwait(false);
         }
 
         private async Task SendMessageAsync(byte[] messageBuffer)
@@ -114,16 +114,16 @@ namespace ThorIOClient
                 {
                     count = messageBuffer.Length - offset;
                 }
-                await _ws.SendAsync(new ArraySegment<byte>(messageBuffer, offset, count), WebSocketMessageType.Text, lastMessage, _cancellationToken);
+                await _ws.SendAsync(new ArraySegment<byte>(messageBuffer, offset, count), WebSocketMessageType.Text, lastMessage, _cancellationToken).ConfigureAwait(false);
             }
         }
         }
 
         private async Task ConnectAsync()
         {
-            await _ws.ConnectAsync(_uri, _cancellationToken);
-            await CallOnConnected();
-            await StartListen();
+            await _ws.ConnectAsync(_uri, _cancellationToken).ConfigureAwait(false);
+            await CallOnConnected().ConfigureAwait(false);
+            await StartListen().ConfigureAwait(false);
         }
 
         private async Task StartListen()
@@ -139,13 +139,13 @@ namespace ThorIOClient
                     WebSocketReceiveResult result;
                     do
                     {
-                        result = await _ws.ReceiveAsync(new ArraySegment<byte>(buffer), _cancellationToken);
+                        result = await _ws.ReceiveAsync(new ArraySegment<byte>(buffer), _cancellationToken).ConfigureAwait(false);
 
                         if (result.MessageType == WebSocketMessageType.Close)
                         {
                             await
-                                _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
-                            await CallOnDisconnected();
+                                _ws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None).ConfigureAwait(false);
+                            await CallOnDisconnected().ConfigureAwait(false);
                         }
                         else
                         {
@@ -155,13 +155,13 @@ namespace ThorIOClient
 
                     } while (!result.EndOfMessage);
 
-                    await CallOnMessage(stringResult);
+                    await CallOnMessage(stringResult).ConfigureAwait(false);
 
                 }
             }
             catch (Exception ex)
             {
-                await CallOnDisconnected();
+                await CallOnDisconnected().ConfigureAwait(false);
             }
             finally
             {
@@ -174,24 +174,24 @@ namespace ThorIOClient
             System.Diagnostics.Debug.WriteLine(stringResult.ToString());
 
             if (_onMessage != null)
-                await RunInTask(() => _onMessage(stringResult.ToString(), this));
+                await RunInTask(() => _onMessage(stringResult.ToString(), this)).ConfigureAwait(false);
         }
 
         private async Task CallOnDisconnected()
         {
             if (_onDisconnected != null)
-                await RunInTask(() => _onDisconnected(this));
+                await RunInTask(() => _onDisconnected(this)).ConfigureAwait(false);
         }
 
         private async Task CallOnConnected()
         {
             if (_onConnected != null)
-                await RunInTask(() => _onConnected(this));
+                await RunInTask(() => _onConnected(this)).ConfigureAwait(false);
         }
 
         private async static Task RunInTask(Action action)
         {
-            await Task.Run(action);
+            await Task.Run(action).ConfigureAwait(false);
         }
     }
 }
