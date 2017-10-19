@@ -103,9 +103,12 @@ namespace thorio.csharp
 
 
 
-            var factory = new Factory("ws://localhost:1337");
+
+            var factory = new Factory("ws://neordpoc.herokuapp.com/");            
+            //var factory = new Factory("ws://127.0.0.1:1337");
 
             factory.AddProxy(myproxy);
+
 
             myproxy.OnError = (ErrorMessage err) =>
             {
@@ -120,9 +123,7 @@ namespace thorio.csharp
                 var timer = new System.Timers.Timer(4000);
                 timer.Elapsed += (sender, e) =>
                 {
-
                     myproxy.SendChatMessageChat(new ChatMessage("Hello World from ProxyBase", "Church boy"));
-
                 };
 
                 timer.Start();
@@ -131,11 +132,12 @@ namespace thorio.csharp
 
             factory.OnOpen = async (ISocket wrapper) =>
             {
-
                 Console.WriteLine("Connected to the server...");
                 await myproxy.Connect();
+                            
                 myproxy.SendChatMessageChat(new ChatMessage("Hello World from ProxyBase (ISocket)", "Church boy"));
             };
+
 
 
 

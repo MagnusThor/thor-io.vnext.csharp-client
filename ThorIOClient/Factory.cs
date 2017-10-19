@@ -15,6 +15,7 @@ using thorio.csharp.ThorIOClient;
 
 using ThorIOClient.Interfaces;
 using ThorIOClient.Models;
+using ThorIOClient.Attributes;
 
 namespace ThorIOClient
 {
@@ -59,7 +60,7 @@ namespace ThorIOClient
             this.AddWsListeners();
 
             if (autoConnect)
-                Task.Run(() => { this.ws.Connect(); });
+                Task.Run(() => { this.ws.Connect(); }).ConfigureAwait(false);
         }
         public Factory(string url, List<ProxyBase> proxies, ISocket socket = null, bool autoConnect = true)
         {
@@ -81,7 +82,7 @@ namespace ThorIOClient
             this.AddWsListeners();
 
             if (autoConnect)
-                Task.Run(() => { this.ws.Connect(); });
+                Task.Run(() => { this.ws.Connect(); }).ConfigureAwait(false);
         }
         public Factory(string url, List<string> proxies, ISocket socket = null, bool autoConnect = true)
         {
@@ -105,7 +106,7 @@ namespace ThorIOClient
             this.AddWsListeners();
 
             if (autoConnect)
-                Task.Run(() => { this.ws.Connect(); });
+                Task.Run(() => { this.ws.Connect(); }).ConfigureAwait(false);
         }
 
         public void AddProxy(ProxyBase proxy)
@@ -126,15 +127,26 @@ namespace ThorIOClient
             this._proxies.Remove(proxy);
         }
 
-        //need to discuss IProxybase (and create delegates call issue)
-        public IEnumerable<IProxyBase> GetDeclaredProxies()
-        {
-            var instances = from t in Assembly.GetExecutingAssembly().GetTypes()
-                            where t.GetInterfaces().Contains(typeof(IProxyBase)) && t.GetConstructor(Type.EmptyTypes) != null
-                            select Activator.CreateInstance(t) as IProxyBase;
+        // Nothing to see here, move along... Experimental
+        // public IEnumerable<ProxyBase> AutomapProxies()
+        // {
+        //     var proxies = GetDeclaredProxyBases();
+        //     foreach(var proxy in proxies)
+        //     {
+        //         AddProxy(proxy);
+        //     }
+        //     return proxies;
+        // }
 
-            return instances;
-        }
+        // public IEnumerable<ProxyBase> GetDeclaredProxyBases()
+        // {
+        //     var instances = AppDomain.CurrentDomain.GetAssemblies()
+        //                     .SelectMany(s => s.GetTypes())
+        //                     .Where(x => typeof(ProxyBase).IsAssignableFrom(x) && x.GetCustomAttributes(typeof(ProxyProperties)).Any() && x.GetConstructor(Type.EmptyTypes) != null)
+        //                     .Select(x => Activator.CreateInstance(x) as ProxyBase);
+
+        //     return instances;
+        // }
 
         public ProxyBase GetProxy<T>(string alias)
         {

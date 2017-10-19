@@ -22,6 +22,7 @@ namespace ThorIOClient.Attributes{
         public ProxyProperties(string alias) {
             this.Alias = alias;
         }
+
     }
 
 

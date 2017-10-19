@@ -172,7 +172,6 @@ namespace ThorIOClient {
                 if(this.OnError != null)
                   this.OnError(err);
             });
-
         }
         public Action < ConnectionInformation > OnOpen;
         public Action < ConnectionInformation > OnClose;
