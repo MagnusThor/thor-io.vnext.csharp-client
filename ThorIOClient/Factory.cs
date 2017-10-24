@@ -23,7 +23,7 @@ namespace ThorIOClient
     public partial class Factory
     {
         private List<ProxyBase> _proxies;
-        private ISocket _socket;
+        private ISocket socket;
         public Action<ISocket> OnOpen;
         public Action<ISocket> OnClose;
         public ISerializer Serializer { get; set; }
@@ -33,9 +33,9 @@ namespace ThorIOClient
         }
 
         private void AddWsListeners() {
-            this._socket.OnConnect((Action<ISocket>)((ISocket evt) => {
+            this.socket.OnConnect((Action<ISocket>)((ISocket evt) => {
                 this.OnOpen(evt);
-                this._socket.OnMessage((Action<string, ISocket>)((string data, ISocket w) => {
+                this.socket.OnMessage((Action<string, ISocket>)((string data, ISocket w) => {
                     var message = Serializer.Deserialize <Message > ((string)data);
                     var proxy = this.GetProxy <ProxyBase> (message.Controller);
 
@@ -43,7 +43,7 @@ namespace ThorIOClient
                         proxy.Dispatch(message);
                 }));
             }));
-            this._socket.OnDisconnect((ISocket evt) => {
+            this.socket.OnDisconnect((ISocket evt) => {
                 this.OnClose(evt);
             });
         }
@@ -55,12 +55,12 @@ namespace ThorIOClient
             if (socket == null)
                 socket = new WebSocketWrapper(url);
 
-            this._socket = socket;
+            this.socket = socket;
 
             this.AddWsListeners();
 
             if (autoConnect)
-                Task.Run(() => { this._socket.Connect(); }).ConfigureAwait(false);
+                Task.Run(() => { this.socket.Connect(); }).ConfigureAwait(false);
         }
         public Factory(string url, List<ProxyBase> proxies, ISocket socket = null, bool autoConnect = true)
         {
@@ -70,19 +70,19 @@ namespace ThorIOClient
             if (socket == null)
                 socket = new WebSocketWrapper(url);
 
-            this._socket = socket;
+            this.socket = socket;
 
             proxies.ForEach((ProxyBase proxy) =>
             {
                 proxy.CreateDelegates();
-                proxy.Ws = this._socket;
+                proxy.Socket = this.socket;
                 this._proxies.Add(proxy);
             });
 
             this.AddWsListeners();
 
             if (autoConnect)
-                Task.Run(() => { this._socket.Connect(); }).ConfigureAwait(false);
+                Task.Run(() => { this.socket.Connect(); }).ConfigureAwait(false);
         }
         public Factory(string url, List<string> proxies, ISocket socket = null, bool autoConnect = true)
         {
@@ -92,7 +92,7 @@ namespace ThorIOClient
             if (socket == null)
                 socket = new WebSocketWrapper(url);
 
-            this._socket = socket;
+            this.socket = socket;
 
             if (proxies.Count == 0)
                 this._proxies.Add(new GenericProxy("generic"));
@@ -106,7 +106,7 @@ namespace ThorIOClient
             this.AddWsListeners();
 
             if (autoConnect)
-                Task.Run(() => { this._socket.Connect(); }).ConfigureAwait(false);
+                Task.Run(() => { this.socket.Connect(); }).ConfigureAwait(false);
         }
 
         public void AddProxy(ProxyBase proxy)
@@ -117,7 +117,7 @@ namespace ThorIOClient
             if (!_proxies.Any(x => x.alias.ToLower() == proxy.alias.ToLower()))
             { 
                 proxy.CreateDelegates();
-                proxy.Ws = this._socket;
+                proxy.Socket = this.socket;
                 this._proxies.Add(proxy);
             }
         }
@@ -158,8 +158,8 @@ namespace ThorIOClient
         }
         public async Task<ISocket> Close()
         {
-            await this._socket.Close().ConfigureAwait(false);
-            return this._socket;
+            await this.socket.Close().ConfigureAwait(false);
+            return this.socket;
         }
     }
 }

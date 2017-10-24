@@ -19,7 +19,7 @@ namespace ThorIOClient {
             get;
             set;
         }
-        public ISocket Ws;
+        public ISocket Socket;
         public string alias;
         private List < Listener > Listeners;
 
@@ -191,7 +191,7 @@ namespace ThorIOClient {
             try {
                 await Task.Run(() => {
                     var data = Serializer.Serialize < Message > (message);
-                    this.Ws.SendMessage(data);
+                    this.Socket.SendMessage(data);
                 }).ConfigureAwait(false);
             } catch (Exception ex) {
                 this.OnError(new ErrorMessage(ex.Message));

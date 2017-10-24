@@ -11,7 +11,6 @@ namespace ThorIOClient
 {
     public class WebSocketWrapper : ISocket
     {
-
         public ThreadSafeQueue<byte[]> Queue {get;set;}
 
         private const int ReceiveChunkSize = 1024;
@@ -96,7 +95,7 @@ namespace ThorIOClient
             await SendMessageAsync(message).ConfigureAwait(false);
         }
 
-        private async Task SendMessageAsync(byte[] messageBuffer)
+        public async Task SendMessageAsync(byte[] messageBuffer)
         {
             if (_ws.State != WebSocketState.Open){
                 this.Queue.Enqueue(messageBuffer);              
@@ -119,14 +118,14 @@ namespace ThorIOClient
         }
         }
 
-        private async Task ConnectAsync()
+        public async Task ConnectAsync()
         {
             await _ws.ConnectAsync(_uri, _cancellationToken).ConfigureAwait(false);
             await CallOnConnected().ConfigureAwait(false);
             await StartListen().ConfigureAwait(false);
         }
 
-        private async Task StartListen()
+        public async Task StartListen()
         {
             var buffer = new byte[ReceiveChunkSize];
 
