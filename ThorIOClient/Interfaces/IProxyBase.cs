@@ -7,7 +7,7 @@ namespace ThorIOClient.Interfaces
 {
     public interface IProxyBase
     {
-        ISocket Ws
+        ISocket Socket
         {
             get;
             set;

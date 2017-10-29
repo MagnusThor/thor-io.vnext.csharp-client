@@ -13,13 +13,13 @@ using ThorIOClient.Interfaces;
 
 namespace ThorIOClient {
 
-    public partial class ProxyBase : IProxyBase{
+    public partial class ProxyBase : IProxyBase {
 
         public ISerializer Serializer {
             get;
             set;
         }
-        public ISocket Socket;
+        public ISocket Socket { get; set; }
         public string alias;
         private List < Listener > Listeners;
 
@@ -181,8 +181,6 @@ namespace ThorIOClient {
             get;
             set;
         }
-        ISocket IProxyBase.Ws { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-
         public async Task Connect() {
             await this.Send(new Message("___connect", "", this.alias)).ConfigureAwait(false);
         }
