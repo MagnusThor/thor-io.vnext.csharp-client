@@ -4,7 +4,7 @@ using System.Text;
 using ThorIOClient;
 using ThorIOClient.Attributes;
 
-namespace thorio.csharp.ThorIOClient
+namespace ThorIOClient
 {
     [ProxyProperties("generic")]
     public class GenericProxy : ProxyBase
