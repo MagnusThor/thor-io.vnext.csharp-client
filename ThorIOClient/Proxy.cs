@@ -10,6 +10,8 @@ using ThorIOClient.Attributes;
 
 using ThorIOClient.Serialization;
 using ThorIOClient.Interfaces;
+using System.Threading;
+using ThorIOClient.Extensions;
 
 namespace ThorIOClient {
 
@@ -160,7 +162,10 @@ namespace ThorIOClient {
                 }
             }
         }
+        public ThorIOClient.Queue.ThreadSafeQueue<Message> messageQueue;
         public ProxyBase() {
+
+          
             this.Serializer = new NewtonJsonSerialization();
             this.Listeners = new List < Listener > ();
             this.On < ConnectionInformation > ("___open", (ConnectionInformation info) => {
@@ -172,6 +177,21 @@ namespace ThorIOClient {
                 if(this.OnError != null)
                   this.OnError(err);
             });
+          
+              this.messageQueue = new ThorIOClient.Queue.ThreadSafeQueue<Message>();
+
+               var ct = new CancellationTokenSource();
+
+                     new Task(action: async () =>
+                     {
+                         for (var i = 0; i < this.messageQueue.Count; i++)
+                         {
+                             var message = this.messageQueue.Dequeue();
+                              this.SendQueueMessage(message);
+                         }
+                     }).Repeat(ct.Token, TimeSpan.FromMilliseconds(60));
+
+
         }
         public Action < ConnectionInformation > OnOpen;
         public Action < ConnectionInformation > OnClose;
@@ -182,22 +202,28 @@ namespace ThorIOClient {
             set;
         }
         public async Task Connect() {
-            await this.Send(new Message("___connect", "", this.alias)).ConfigureAwait(false);
+            await this.Send(new Message("___connect", "{}", this.alias)).ConfigureAwait(false);
         }
         private async Task Send(Message message) {
-            // check of IsConnected is true?
-            try {
-                await Task.Run(() => {
-                    var data = Serializer.Serialize < Message > (message);
-                    this.Socket.SendMessage(data);
-                }).ConfigureAwait(false);
-            } catch (Exception ex) {
-                this.OnError(new ErrorMessage(ex.Message));
-            }
-
+            this.messageQueue.Enqueue(message);
         }
+
+        private void SendQueueMessage(Message message){
+        
+            // try {
+            //     await Task.Run(() => {
+                        var data = Serializer.Serialize < Message > (message);
+                        this.Socket.SendMessage(data);
+                // }).ConfigureAwait(false);
+                
+            // } catch (Exception ex) {
+            //     this.OnError(new ErrorMessage(ex.Message));
+            // }
+            
+        }
+
         public async Task < ProxyBase > Close() {
-            await this.Send(new Message("___close", "", this.alias)).ConfigureAwait(false);
+            await this.Send(new Message("___close", "{}", this.alias)).ConfigureAwait(false);
             return this;
         }
         public ProxyBase On < T > (string topic, Action < T > fn) {

@@ -40,14 +40,11 @@ namespace ThorIOClient.Serialization
         }
         public T Deserialize<T>(string json)
         {
-
-
             try{
                   return JsonConvert.DeserializeObject<T>(json);
             }catch(Exception ex){
-                // do op
+                // todo: Throw an error message?
             }
-            
               return default(T);
         }
         public object Deserialize(string json, System.Type type)
